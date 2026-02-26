@@ -1,0 +1,215 @@
+{% load static %}
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MathSpace</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #f8f9fb;
+      color: #1a1a1a;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 20px;
+    }
+
+    nav a {
+      margin-left: 18px;
+      text-decoration: none;
+      color: #555;
+      font-weight: 500;
+    }
+
+    nav a:hover {
+      color: #000;
+    }
+
+    .hero {
+      margin-top: 60px;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      align-items: center;
+      gap: 40px;
+    }
+
+    .hero h1 {
+      font-size: 48px;
+      margin: 0 0 16px;
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: #555;
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 20px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: 0.2s ease;
+    }
+
+    .btn-primary {
+      background: #111827;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #000;
+    }
+
+    .btn-outline {
+      border: 1px solid #111827;
+      color: #111827;
+    }
+
+    .btn-outline:hover {
+      background: #111827;
+      color: white;
+    }
+
+    .hero img {
+      width: 100%;
+      border-radius: 16px;
+    }
+
+    .features {
+      margin-top: 80px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature {
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+
+    .feature h3 {
+      margin-top: 0;
+    }
+
+    footer {
+      margin-top: 80px;
+      padding: 24px 0;
+      text-align: center;
+      color: #777;
+      font-size: 14px;
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+      .features {
+        grid-template-columns: 1fr;
+      }
+      .hero h1 {
+        font-size: 36px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <header>
+      <div class="logo">MathSpace</div>
+      <nav>
+        {% if user.is_authenticated %}
+          <a href="{% url 'dashboard' %}">Кабінет</a>
+          <a href="{% url 'account_logout' %}">Вийти</a>
+        {% else %}
+          <a href="{% url 'account_login' %}">Вхід</a>
+          <a href="{% url 'account_signup' %}">Реєстрація</a>
+        {% endif %}
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div>
+        <h1>Математика без стресу</h1>
+        <p>
+          Індивідуальні заняття з викладачем. Без оцінок і контрольних —
+          тільки розуміння, практика та впевненість.
+        </p>
+
+        <div class="buttons">
+          <a href="{% url 'dashboard' %}" class="btn btn-primary">
+            Почати навчання
+          </a>
+          <a href="{% url 'teachers' %}" class="btn btn-outline">
+            Обрати викладача
+          </a>
+        </div>
+
+        {% if not user.is_authenticated %}
+        <p style="margin-top:16px; color:#666;">
+          Для запису потрібно зареєструватися або увійти в систему.
+        </p>
+        {% endif %}
+      </div>
+
+      <div>
+        <img src="https://images.unsplash.com/photo-1509228627152-72ae9ae6848d" alt="Math">
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="feature">
+        <h3>Індивідуальний підхід</h3>
+        <p>Програма підлаштовується під рівень та цілі учня.</p>
+      </div>
+
+      <div class="feature">
+        <h3>Гнучкий графік</h3>
+        <p>Обирай зручний час та викладача.</p>
+      </div>
+
+      <div class="feature">
+        <h3>Реальний результат</h3>
+        <p>Зростання впевненості та розуміння математики.</p>
+      </div>
+    </section>
+
+    <footer>
+      © 2026 MathSpace
+    </footer>
+
+  </div>
+</body>
+</html>
