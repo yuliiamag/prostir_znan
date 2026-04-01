@@ -163,16 +163,44 @@
         <div class="error">Перевір email/логін і пароль — щось не збіглося.</div>
       {% endif %}
 
-      <form method="post" action="{% url 'account_login' %}">
+            <form method="post" action="{% url 'account_login' %}">
         {% csrf_token %}
+
+        {% if form.errors %}
+          <div class="error">
+            Невірний email або пароль
+          </div>
+        {% endif %}
 
         <div class="field">
           {{ form.login }}
+          {% if form.login.errors %}
+            <ul class="errorlist">
+              {% for error in form.login.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
         </div>
 
         <div class="field">
           {{ form.password }}
+          {% if form.password.errors %}
+            <ul class="errorlist">
+              {% for error in form.password.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
         </div>
+
+        {% if form.non_field_errors %}
+          <ul class="errorlist">
+            {% for error in form.non_field_errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
 
         {% if form.remember %}
           <div style="margin: 10px 4px 0; color: var(--muted); font-size: 13px;">
