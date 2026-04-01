@@ -148,3 +148,10 @@ EMAIL_USE_TLS = True
 
 EMAIL_HOST_USER = "ssvit.svichok@gmail.com"
 EMAIL_HOST_PASSWORD = "tkyg hhvk gnkz pxvh"
+
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+
+ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = "/dashboard/"
+ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = "/dashboard/"
+
+DEFAULT_FROM_EMAIL = "MathSpace <ssvit.svichok@gmail.com>"
