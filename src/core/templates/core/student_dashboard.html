@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Кабінет учня • MathSpace{% endblock %}
+
+{% block content %}
+  <h1>Кабінет учня</h1>
+
+  <p>Привіт, {{ request.user.first_name }}!</p>
+
+  <div class="section">
+    <h2>Приєднатися до вчителя</h2>
+
+    <form method="post">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <ul class="errorlist">
+          {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <div style="margin-bottom:12px;">
+        {{ form.access_code }}
+        {% if form.access_code.errors %}
+          <ul class="errorlist">
+            {% for error in form.access_code.errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn">Додати вчителя</button>
+    </form>
+  </div>
+
+  <div class="actions">
+    <a href="{% url 'home' %}" class="btn btn-secondary">На головну</a>
+    <a href="{% url 'dashboard' %}" class="btn">Оновити кабінет</a>
+  </div>
+
+  <div class="section">
+    <h2>Мої вчителі</h2>
+
+    {% if teacher_links %}
+      <ul class="list">
+        {% for link in teacher_links %}
+          <li>{{ link.teacher.user.first_name }} — {{ link.teacher.user.email }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Поки що вчителів немає.</p>
+    {% endif %}
+  </div>
+{% endblock %}

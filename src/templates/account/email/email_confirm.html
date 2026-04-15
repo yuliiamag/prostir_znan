@@ -1,0 +1,113 @@
+{% load i18n %}
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Підтвердження пошти • EduSpace</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #1f1f1f;
+      --card: #eef2ec;
+      --accent: #1fa06d;
+      --accent-hover: #188a5c;
+      --border: #a8ca88;
+      --text: #204637;
+      --muted: #5c7560;
+      --danger: #be4a45;
+      --danger-bg: #f4d7d5;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 460px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 24px;
+      text-align: center;
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 10px;
+    }
+
+    .text {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 15px;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .error {
+      background: var(--danger-bg);
+      color: var(--danger);
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    {% if confirmation %}
+      <h1 class="title">Підтвердження пошти</h1>
+      <div class="text">
+        Натисни кнопку нижче, щоб підтвердити свою email-адресу.
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <button class="btn" type="submit">Підтвердити email</button>
+      </form>
+    {% else %}
+      <h1 class="title">Посилання недійсне</h1>
+      <div class="text">
+        Це посилання вже використане або недійсне.
+      </div>
+
+      <a href="{% url 'account_login' %}" class="btn">Перейти до входу</a>
+    {% endif %}
+  </div>
+</body>
+</html>
