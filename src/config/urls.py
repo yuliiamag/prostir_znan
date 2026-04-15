@@ -11,4 +11,5 @@ urlpatterns = [
             TemplateView.as_view(template_name="account/email_confirmed.html"),
             name="email_confirmed",
         ),
+
 ]

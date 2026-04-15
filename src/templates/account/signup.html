@@ -4,162 +4,191 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Реєстрація • MathSpace</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>Реєстрація • EduSpace</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
     :root{
-      --sky:#b3d9ff;
-      --lav:#c4b5fd;
-      --pink:#f9a8d4;
-      --ink:#1f2937;
-      --muted:#6b7280;
-      --field:#bfe2ff;
+      --bg: #1f1f1f;
+      --card: #eef2ec;
+      --accent: #1fa06d;
+      --accent-hover: #188a5c;
+      --border: #a8ca88;
+      --text: #204637;
+      --muted: #5c7560;
+      --danger: #be4a45;
+      --danger-bg: #f4d7d5;
+      --input-border: #cbd5c0;
+      --input-bg: #ffffff;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      min-height:100vh;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color:var(--ink);
-      background:
-        radial-gradient(900px 500px at 15% 20%, rgba(249,168,212,.42), transparent 60%),
-        radial-gradient(900px 500px at 85% 80%, rgba(196,181,253,.58), transparent 60%),
-        linear-gradient(135deg, rgba(179,217,255,1), rgba(196,181,253,1));
-      display:grid;
-      place-items:center;
-      padding:28px;
-    }
-    .shell{ width:min(520px, 92vw); position:relative; }
-    .card{
-      background: rgba(255,255,255,.72);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,.55);
-      border-radius: 28px;
-      box-shadow: 0 22px 50px rgba(31,41,55,.14);
-      padding: 28px 26px 24px;
-      overflow:hidden;
-    }
-    .top-pill{
-      width: fit-content;
-      margin: 0 auto 18px;
-      padding: 10px 18px;
-      border-radius: 999px;
-      background: rgba(196,181,253,.75);
-      border: 1px solid rgba(255,255,255,.6);
-      font-weight: 800;
-      letter-spacing: .2px;
-    }
-    .subtitle{
-      text-align:center;
-      color: var(--muted);
-      margin: -6px 0 18px;
-      font-size: 14px;
-    }
-    .field{ margin: 12px 0; }
-    .field input{
-      width:100%;
-      border: 1px solid rgba(31,41,55,.08);
-      background: rgba(191,226,255,.85);
-      border-radius: 18px;
-      padding: 14px 16px;
-      font-size: 15px;
-      outline: none;
-      transition: .15s ease;
-    }
-    .field input:focus{
-      border-color: rgba(249,168,212,.9);
-      box-shadow: 0 0 0 4px rgba(249,168,212,.22);
-      background: rgba(255,255,255,.85);
-    }
-    .btn{
-      width:100%;
-      margin-top: 10px;
-      border: 0;
-      border-radius: 18px;
-      padding: 14px 16px;
-      font-weight: 800;
-      font-size: 15px;
-      cursor:pointer;
-      color: #1f2937;
-      background: linear-gradient(135deg, rgba(249,168,212,1), rgba(196,181,253,1));
-      box-shadow: 0 14px 28px rgba(31,41,55,.16);
-      transition: transform .12s ease, filter .12s ease;
-    }
-    .btn:hover{ filter: brightness(1.02); transform: translateY(-1px); }
-    .btn:active{ transform: translateY(0px); }
 
-    .note{
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 460px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 18px;
+      padding: 26px 22px;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0 0 6px;
+      color: var(--text);
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      margin: 0 0 18px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+      color: var(--text);
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 15px;
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .note {
       margin-top: 12px;
       color: var(--muted);
       font-size: 13px;
       line-height: 1.45;
-      text-align:center;
+      text-align: center;
     }
-    .link{
-      display:inline-block;
+
+    .link-wrap {
+      text-align: center;
       margin-top: 12px;
-      color: rgba(31,41,55,.78);
-      text-decoration:none;
-      font-weight: 800;
+    }
+
+    .link {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 500;
       font-size: 14px;
     }
-    .link:hover{ color: rgba(31,41,55,1); text-decoration: underline; }
 
-    .bubble{ position:absolute; border-radius: 999px; opacity:.55; pointer-events:none; }
-    .b1{ width:92px; height:92px; background: rgba(196,181,253,.62); top:-18px; left:-18px; }
-    .b2{ width:120px; height:120px; background: rgba(179,217,255,.65); bottom:-30px; right:-30px; }
-    .b3{ width:62px; height:62px; background: rgba(249,168,212,.55); top:38px; right:18px; }
+    .link:hover {
+      text-decoration: underline;
+    }
 
-    ul.errorlist{ margin: 0 0 10px; padding-left: 18px; color:#7a1f4a; font-weight:700; }
-    ul.errorlist li{ margin: 4px 0; }
+    .error {
+      background: var(--danger-bg);
+      color: var(--danger);
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    ul.errorlist {
+      margin: 6px 0 0;
+      padding-left: 18px;
+      color: var(--danger);
+      font-size: 13px;
+    }
+
+    ul.errorlist li {
+      margin: 4px 0;
+    }
   </style>
 </head>
-
 <body>
-  <div class="shell">
-    <div class="bubble b1"></div><div class="bubble b2"></div><div class="bubble b3"></div>
-
-    <div class="card">
-      <div class="top-pill">Реєстрація</div>
-      <div class="subtitle">Створи акаунт — і ми надішлемо лист для підтвердження 📩</div>
-
-           <form method="post" action="{% url 'account_signup' %}">
-        {% csrf_token %}
-
-        {% if form.non_field_errors %}
-          <ul class="errorlist">
-            {% for error in form.non_field_errors %}
-              <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-
-        {% for field in form %}
-          <div class="field">
-            {{ field }}
-
-            {% if field.errors %}
-              <ul class="errorlist">
-                {% for error in field.errors %}
-                  <li>{{ error }}</li>
-                {% endfor %}
-              </ul>
-            {% endif %}
-          </div>
-        {% endfor %}
-
-        <button class="btn" type="submit">Створити акаунт</button>
-
-        <div class="note">
-          Після реєстрації перевір пошту (і “Спам” теж) та підтвердь email.
-        </div>
-
-        <div style="text-align:center;">
-          <a class="link" href="{% url 'account_login' %}">Вже є акаунт? Увійти</a>
-        </div>
-      </form>
+  <div class="card">
+    <h1 class="title">Реєстрація</h1>
+    <div class="subtitle">
+      Створи акаунт і підтвердь email, щоб почати роботу в системі
     </div>
+
+    <form method="post" action="{% url 'account_signup' %}">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="error">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% for field in form %}
+        <div class="field">
+          {{ field }}
+          {% if field.errors %}
+            <ul class="errorlist">
+              {% for error in field.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <button class="btn" type="submit">Створити акаунт</button>
+
+      <div class="note">
+        Після реєстрації перевір пошту та підтвердь свою email-адресу.
+      </div>
+
+      <div class="link-wrap">
+        <a class="link" href="{% url 'account_login' %}">Вже є акаунт? Увійти</a>
+      </div>
+    </form>
   </div>
 </body>
 </html>

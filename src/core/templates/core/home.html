@@ -1,215 +1,259 @@
+{% extends "base.html" %}
 {% load static %}
-<!doctype html>
-<html lang="uk">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MathSpace</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+{% block title %}MathSpace{% endblock %}
 
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: 'Inter', sans-serif;
-      background: #f8f9fb;
-      color: #1a1a1a;
+{% block extra_css %}
+<style>
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 18px;
+  }
+
+  .welcome-title {
+    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #204637;
+  }
+
+  .welcome-date {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    color: #1fa06d;
+  }
+
+  .lesson-btn {
+    background: #1fa06d;
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 28px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .stat-card {
+    background: #dfe5d1;
+    border-radius: 12px;
+    padding: 14px 14px 12px;
+  }
+
+  .stat-title {
+    font-size: 14px;
+    color: #58715d;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 27px;
+    font-weight: 700;
+    color: #194837;
+  }
+
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .panel {
+    background: #f8faf7;
+    border: 1px solid #a8ca88;
+    border-radius: 14px;
+    padding: 14px 14px 10px;
+  }
+
+  .panel-title {
+    margin: 0 0 10px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #214536;
+  }
+
+  .item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 16px;
+    color: #345645;
+  }
+
+  .item-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-green { background: #73b23d; }
+  .dot-light { background: #8fc34f; }
+  .dot-soft { background: #b1d57b; }
+  .dot-red { background: #dd5955; }
+
+  .percent {
+    font-weight: 600;
+    color: #20503d;
+  }
+
+  .badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .badge-submit {
+    background: #f5d9d8;
+    color: #c25250;
+  }
+
+  .badge-done {
+    background: #dbeec9;
+    color: #4f8529;
+  }
+
+  .badge-late {
+    background: #f4d7d5;
+    color: #be4a45;
+  }
+
+  @media (max-width: 900px) {
+    .stats-grid,
+    .bottom-grid {
+      grid-template-columns: 1fr;
     }
 
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 24px;
+    .top-row {
+      flex-direction: column;
+      align-items: stretch;
     }
 
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0;
-    }
-
-    .logo {
-      font-weight: 700;
-      font-size: 20px;
-    }
-
-    nav a {
-      margin-left: 18px;
-      text-decoration: none;
-      color: #555;
-      font-weight: 500;
-    }
-
-    nav a:hover {
-      color: #000;
-    }
-
-    .hero {
-      margin-top: 60px;
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      align-items: center;
-      gap: 40px;
-    }
-
-    .hero h1 {
-      font-size: 48px;
-      margin: 0 0 16px;
-    }
-
-    .hero p {
-      font-size: 18px;
-      color: #555;
-      margin-bottom: 28px;
-      line-height: 1.5;
-    }
-
-    .buttons {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      padding: 12px 20px;
-      border-radius: 12px;
-      text-decoration: none;
-      font-weight: 600;
-      transition: 0.2s ease;
-    }
-
-    .btn-primary {
-      background: #111827;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #000;
-    }
-
-    .btn-outline {
-      border: 1px solid #111827;
-      color: #111827;
-    }
-
-    .btn-outline:hover {
-      background: #111827;
-      color: white;
-    }
-
-    .hero img {
+    .lesson-btn {
       width: 100%;
-      border-radius: 16px;
     }
+  }
+</style>
+{% endblock %}
 
-    .features {
-      margin-top: 80px;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-    }
+{% block content %}
+<div class="top-row">
+  <div>
+    <h1 class="welcome-title">
+      Привіт,
+      {% if user.is_authenticated and user.first_name %}
+        {{ user.first_name }}!
+      {% else %}
+        друже!
+      {% endif %}
+    </h1>
 
-    .feature {
-      background: white;
-      padding: 24px;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-    }
-
-    .feature h3 {
-      margin-top: 0;
-    }
-
-    footer {
-      margin-top: 80px;
-      padding: 24px 0;
-      text-align: center;
-      color: #777;
-      font-size: 14px;
-    }
-
-    @media (max-width: 900px) {
-      .hero {
-        grid-template-columns: 1fr;
-      }
-      .features {
-        grid-template-columns: 1fr;
-      }
-      .hero h1 {
-        font-size: 36px;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <div class="container">
-
-    <header>
-      <div class="logo">MathSpace</div>
-      <nav>
-        {% if user.is_authenticated %}
-          <a href="{% url 'dashboard' %}">Кабінет</a>
-          <a href="{% url 'account_logout' %}">Вийти</a>
-        {% else %}
-          <a href="{% url 'account_login' %}">Вхід</a>
-          <a href="{% url 'account_signup' %}">Реєстрація</a>
-        {% endif %}
-      </nav>
-    </header>
-
-    <section class="hero">
-      <div>
-        <h1>Математика без стресу</h1>
-        <p>
-          Індивідуальні заняття з викладачем. Без оцінок і контрольних —
-          тільки розуміння, практика та впевненість.
-        </p>
-
-        <div class="buttons">
-          <a href="{% url 'dashboard' %}" class="btn btn-primary">
-            Почати навчання
-          </a>
-          <a href="{% url 'teachers' %}" class="btn btn-outline">
-            Обрати викладача
-          </a>
-        </div>
-
-        {% if not user.is_authenticated %}
-        <p style="margin-top:16px; color:#666;">
-          Для запису потрібно зареєструватися або увійти в систему.
-        </p>
-        {% endif %}
-      </div>
-
-      <div>
-        <img src="https://images.unsplash.com/photo-1509228627152-72ae9ae6848d" alt="Math">
-      </div>
-    </section>
-
-    <section class="features">
-      <div class="feature">
-        <h3>Індивідуальний підхід</h3>
-        <p>Програма підлаштовується під рівень та цілі учня.</p>
-      </div>
-
-      <div class="feature">
-        <h3>Гнучкий графік</h3>
-        <p>Обирай зручний час та викладача.</p>
-      </div>
-
-      <div class="feature">
-        <h3>Реальний результат</h3>
-        <p>Зростання впевненості та розуміння математики.</p>
-      </div>
-    </section>
-
-    <footer>
-      © 2026 MathSpace
-    </footer>
-
+    <p class="welcome-date">Середа, 15 квітня 2026</p>
   </div>
-</body>
-</html>
+
+  {% if user.is_authenticated %}
+    <button class="lesson-btn">+ Урок</button>
+  {% else %}
+    <a href="{% url 'account_signup' %}" class="lesson-btn" style="display:inline-block;">
+      Почати
+    </a>
+  {% endif %}
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-title">Середній бал</div>
+    <div class="stat-value">9.2</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-title">Завдань здано</div>
+    <div class="stat-value">14/17</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-title">Годин</div>
+    <div class="stat-value">24</div>
+  </div>
+</div>
+
+<div class="bottom-grid">
+  <section class="panel">
+    <h2 class="panel-title">Мої курси</h2>
+
+    <div class="item-row">
+      <div class="item-left">
+        <span class="dot dot-green"></span>
+        <span>Математика</span>
+      </div>
+      <span class="percent">82%</span>
+    </div>
+
+    <div class="item-row">
+      <div class="item-left">
+        <span class="dot dot-light"></span>
+        <span>Англійська</span>
+      </div>
+      <span class="percent">55%</span>
+    </div>
+
+    <div class="item-row">
+      <div class="item-left">
+        <span class="dot dot-soft"></span>
+        <span>Фізика</span>
+      </div>
+      <span class="percent">38%</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Завдання</h2>
+
+    <div class="item-row">
+      <div class="item-left">
+        <span class="dot dot-red"></span>
+        <span>Похідні</span>
+      </div>
+      <span class="badge badge-submit">здати</span>
+    </div>
+
+    <div class="item-row">
+      <div class="item-left">
+        <span class="dot dot-green"></span>
+        <span>Unit 5</span>
+      </div>
+      <span class="badge badge-done">здано</span>
+    </div>
+
+    <div class="item-row">
+      <div class="item-left">
+        <span class="dot dot-red"></span>
+        <span>Ньютон</span>
+      </div>
+      <span class="badge badge-late">прострочено</span>
+    </div>
+  </section>
+</div>
+{% endblock %}
