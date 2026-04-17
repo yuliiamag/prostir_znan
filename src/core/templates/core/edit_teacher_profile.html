@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Редагування профілю • MathSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+  .edit-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .page-title {
+    margin: 0 0 8px;
+    font-size: 28px;
+    font-weight: 700;
+    color: #204637;
+  }
+
+  .page-subtitle {
+    margin: 0 0 22px;
+    font-size: 15px;
+    color: #5c7560;
+  }
+
+  .edit-card {
+    background: #f8faf7;
+    border: 1px solid #a8ca88;
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #204637;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #cbd5c0;
+    border-radius: 12px;
+    font-size: 15px;
+    outline: none;
+    background: #fff;
+  }
+
+  .form-input:focus {
+    border-color: #1fa06d;
+    box-shadow: 0 0 0 3px rgba(31, 160, 109, 0.12);
+  }
+
+  .errorlist {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: #b42318;
+    font-size: 13px;
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .btn,
+  .btn-secondary {
+    display: inline-block;
+    padding: 12px 18px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn {
+    background: #1fa06d;
+    color: white;
+  }
+
+  .btn:hover {
+    background: #188a5c;
+  }
+
+  .btn-secondary {
+    background: white;
+    color: #204637;
+    border: 1px solid #cbd5c0;
+  }
+
+  .btn-secondary:hover {
+    background: #f7faf5;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-wrap">
+  <h1 class="page-title">Редагування профілю</h1>
+  <p class="page-subtitle">
+    Тут можна змінити основну інформацію про вчителя.
+  </p>
+
+  <div class="edit-card">
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label for="{{ form.first_name.id_for_label }}">Ім’я</label>
+        {{ form.first_name }}
+        {{ form.first_name.errors }}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.last_name.id_for_label }}">Прізвище</label>
+        {{ form.last_name }}
+        {{ form.last_name.errors }}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.email.id_for_label }}">Email</label>
+        {{ form.email }}
+        {{ form.email.errors }}
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn">Зберегти</button>
+        <a href="{% url 'teacher_dashboard' %}" class="btn-secondary">Скасувати</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

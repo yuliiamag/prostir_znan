@@ -1,17 +1,24 @@
 from django.shortcuts import redirect, render
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from .forms import JoinTeacherByCodeForm, TeacherProfileEditForm
+from .models import TeacherProfile, StudentTeacherLink
+from datetime import timedelta
+from django.db.models import Q
+from django.utils import timezone
+import calendar
+from datetime import date
 
-from .forms import JoinTeacherByCodeForm
-from .models import StudentProfile, TeacherProfile
-
+from .models import CalendarEvent
 
 def home(request):
     return render(request, "core/home.html")
 
+
 @login_required
 def dashboard(request):
     return render(request, "core/dashboard.html")
+
 
 @login_required
 def teachers(request):
@@ -33,7 +40,7 @@ def dashboard_view(request):
 
 
 @login_required
-def teacher_dashboard_view(request):
+def teacher_dashboard(request):
     user = request.user
 
     if not hasattr(user, "teacher_profile"):
@@ -82,3 +89,89 @@ def student_dashboard_view(request):
             "teacher_links": teacher_links,
         },
     )
+
+
+@login_required
+def edit_teacher_profile(request):
+    if request.method == "POST":
+        form = TeacherProfileEditForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Профіль успішно оновлено.")
+            return redirect("teacher_dashboard")
+    else:
+        form = TeacherProfileEditForm(instance=request.user)
+
+    return render(
+        request,
+        "core/edit_teacher_profile.html",
+        {
+            "form": form,
+        },
+    )
+
+@login_required
+def calendar_view(request):
+    today = date.today()
+
+    year = int(request.GET.get("year", today.year))
+    month = int(request.GET.get("month", today.month))
+
+    cal = calendar.Calendar(firstweekday=0)
+    raw_month_days = cal.monthdayscalendar(year, month)
+
+    events = CalendarEvent.objects.filter(
+        Q(teacher=request.user) | Q(student=request.user),
+        start_time__year=year,
+        start_time__month=month
+    ).order_by("start_time")
+
+    events_by_day = {}
+    for event in events:
+        day = event.start_time.day
+        events_by_day.setdefault(day, []).append(event)
+
+    month_days = []
+    for week in raw_month_days:
+        week_data = []
+        for day in week:
+            week_data.append({
+                "day": day,
+                "events": events_by_day.get(day, []) if day != 0 else [],
+                "is_today": (
+                    day == today.day and
+                    month == today.month and
+                    year == today.year
+                )
+            })
+        month_days.append(week_data)
+
+    prev_month = month - 1
+    prev_year = year
+    if prev_month == 0:
+        prev_month = 12
+        prev_year -= 1
+
+    next_month = month + 1
+    next_year = year
+    if next_month == 13:
+        next_month = 1
+        next_year += 1
+
+    month_name = {
+        1: "Січень", 2: "Лютий", 3: "Березень", 4: "Квітень",
+        5: "Травень", 6: "Червень", 7: "Липень", 8: "Серпень",
+        9: "Вересень", 10: "Жовтень", 11: "Листопад", 12: "Грудень"
+    }[month]
+    weeks_count = len(month_days)
+    return render(request, "core/calendar.html", {
+        "year": year,
+        "month": month,
+        "month_name": month_name,
+        "month_days": month_days,
+        "prev_month": prev_month,
+        "prev_year": prev_year,
+        "next_month": next_month,
+        "next_year": next_year,
+        "weeks_count": weeks_count,
+    })

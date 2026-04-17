@@ -76,3 +76,19 @@ class JoinTeacherByCodeForm(forms.Form):
             student=self.student_profile,
             teacher=self.teacher,
         )
+
+
+class TeacherProfileEditForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email"]
+        labels = {
+            "first_name": "Ім’я",
+            "last_name": "Прізвище",
+            "email": "Email",
+        }
+        widgets = {
+            "first_name": forms.TextInput(attrs={"class": "form-input"}),
+            "last_name": forms.TextInput(attrs={"class": "form-input"}),
+            "email": forms.EmailInput(attrs={"class": "form-input"}),
+        }

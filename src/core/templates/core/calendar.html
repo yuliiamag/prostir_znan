@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+.main-content {
+  padding: 6px 16px 10px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.calendar-wrapper {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 14px 16px 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.calendar-header {
+  display: grid;
+  grid-template-columns: 52px 1fr 52px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.calendar-header h2 {
+  margin: 0;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.nav-btn {
+  background: #eef2ec;
+  border: none;
+  height: 44px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
+  color: #5f7368;
+  font-size: 15px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  grid-auto-rows: minmax(78px, 1fr);
+}
+
+.calendar-cell {
+  background: #f4f6f3;
+  border-radius: 14px;
+  padding: 8px;
+  position: relative;
+  border: 1px solid #e2e8df;
+  overflow: hidden;
+}
+
+.day-number {
+  font-size: 14px;
+  color: #6b7d72;
+  font-weight: 600;
+}
+
+.calendar-cell.today {
+  border: 2px solid #1fa06d;
+  background: #f3fbf7;
+}
+
+.event {
+  margin-top: 4px;
+  padding: 3px 6px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.event.lesson {
+  background: #d9f2e7;
+  color: #1c8a5f;
+}
+
+.event.homework {
+  background: #fff1cc;
+  color: #b7791f;
+}
+
+.event.deadline {
+  background: #fde2e2;
+  color: #c94b4b;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="calendar-wrapper">
+    <div class="calendar-header">
+      <a class="nav-btn" href="?year={{ prev_year }}&month={{ prev_month }}">←</a>
+      <h2>{{ month_name }} {{ year }}</h2>
+      <a class="nav-btn" href="?year={{ next_year }}&month={{ next_month }}">→</a>
+    </div>
+
+    <div class="calendar-days">
+      <div>Пн</div>
+      <div>Вт</div>
+      <div>Ср</div>
+      <div>Чт</div>
+      <div>Пт</div>
+      <div>Сб</div>
+      <div>Нд</div>
+    </div>
+
+    <div class="calendar-grid {% if weeks_count == 6 %}six-weeks{% endif %}">
+      {% for week in month_days %}
+        {% for item in week %}
+          <div class="calendar-cell {% if item.is_today %}today{% endif %}">
+            {% if item.day != 0 %}
+              <span class="day-number">{{ item.day }}</span>
+
+              {% for event in item.events %}
+                <div class="event {% if event.event_type == 'lesson' %}lesson{% elif event.event_type == 'homework' %}homework{% else %}deadline{% endif %}">
+                  {{ event.title }}
+                </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
