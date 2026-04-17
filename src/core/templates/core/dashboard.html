@@ -232,6 +232,30 @@
         </div>
       </div>
     </div>
+    {% if upcoming_events %}
+  <section class="dashboard-reminders">
+    <h2>Нагадування</h2>
+
+    {% for event in upcoming_events %}
+      <div class="reminder-card">
+        <h3>{{ event.title }}</h3>
+        <p>
+          {{ event.get_event_type_display }} —
+          {{ event.start_time|date:"d.m.Y H:i" }}
+        </p>
+
+        {% if event.meeting_link %}
+          <a href="{{ event.meeting_link }}" target="_blank">Посилання на заняття</a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </section>
+{% else %}
+  <section class="dashboard-reminders">
+    <h2>Нагадування</h2>
+    <p>Наразі найближчих подій немає.</p>
+  </section>
+{% endif %}
 
     <footer>© 2026 MathSpace</footer>
   </div>
