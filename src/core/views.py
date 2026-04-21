@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.utils import timezone
 import calendar
 from datetime import date
-
+import locale
 from .models import CalendarEvent
 
 def home(request):
@@ -50,12 +50,16 @@ def teacher_dashboard(request):
     teacher_profile = user.teacher_profile
     student_links = teacher_profile.student_links.select_related("student__user")
 
+    now = timezone.now()
+    current_date = f"{DAYS[now.weekday()]}, {now.day} {MONTHS[now.month]} {now.year}"
+
     return render(
         request,
         "core/teacher_dashboard.html",
         {
             "teacher_profile": teacher_profile,
             "student_links": student_links,
+            "current_date": current_date,
         },
     )
 
@@ -90,25 +94,6 @@ def student_dashboard_view(request):
         },
     )
 
-
-@login_required
-def edit_teacher_profile(request):
-    if request.method == "POST":
-        form = TeacherProfileEditForm(request.POST, instance=request.user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Профіль успішно оновлено.")
-            return redirect("teacher_dashboard")
-    else:
-        form = TeacherProfileEditForm(instance=request.user)
-
-    return render(
-        request,
-        "core/edit_teacher_profile.html",
-        {
-            "form": form,
-        },
-    )
 
 @login_required
 def calendar_view(request):
@@ -175,3 +160,62 @@ def calendar_view(request):
         "next_year": next_year,
         "weeks_count": weeks_count,
     })
+
+DAYS = {
+    0: "Понеділок",
+    1: "Вівторок",
+    2: "Середа",
+    3: "Четвер",
+    4: "П’ятниця",
+    5: "Субота",
+    6: "Неділя",
+}
+
+MONTHS = {
+    1: "січня", 2: "лютого", 3: "березня",
+    4: "квітня", 5: "травня", 6: "червня",
+    7: "липня", 8: "серпня", 9: "вересня",
+    10: "жовтня", 11: "листопада", 12: "грудня",
+}
+
+@login_required
+def teacher_profile(request):
+    user = request.user
+
+    if not hasattr(user, "teacher_profile"):
+        messages.error(request, "Ця сторінка доступна тільки для вчителя.")
+        return redirect("dashboard")
+
+    teacher_profile = user.teacher_profile
+    student_links = teacher_profile.student_links.select_related("student__user")
+
+    lessons_count = CalendarEvent.objects.filter(
+        teacher=request.user,
+        start_time__lt=timezone.now()
+    ).count()
+
+    is_edit = request.GET.get("edit") == "1"
+
+    if request.method == "POST":
+        user.first_name = request.POST.get("first_name", "").strip()
+        user.last_name = request.POST.get("last_name", "").strip()
+        user.email = request.POST.get("email", "").strip()
+
+        teacher_profile.phone = request.POST.get("phone", "").strip()
+        teacher_profile.subject = request.POST.get("subject", "").strip()
+
+        user.save()
+        teacher_profile.save()
+
+        return redirect("teacher_profile")
+
+    return render(
+        request,
+        "core/teacher_profile.html",
+        {
+            "teacher_profile": teacher_profile,
+            "students_count": student_links.count(),
+            "lessons_count": lessons_count,
+            "is_edit": is_edit,
+        },
+    )

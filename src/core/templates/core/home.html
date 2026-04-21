@@ -176,9 +176,7 @@
   {% if user.is_authenticated %}
     <button class="lesson-btn">+ Урок</button>
   {% else %}
-    <a href="{% url 'account_signup' %}" class="lesson-btn" style="display:inline-block;">
-      Почати
-    </a>
+
   {% endif %}
 </div>
 

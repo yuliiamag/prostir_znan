@@ -3,15 +3,427 @@
 {% block title %}Кабінет учня • MathSpace{% endblock %}
 
 {% block content %}
-  <h1>Кабінет учня</h1>
+<style>
+  .student-dashboard {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px 24px;
+  }
 
-  <p>Привіт, {{ request.user.first_name }}!</p>
+  .welcome-line {
+    margin: 0 0 22px;
+    font-size: 20px;
+    color: #4f6f61;
+  }
 
-  <div class="section">
-    <h2>Приєднатися до вчителя</h2>
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 22px;
+  }
 
-    <form method="post">
+  .stat-card {
+    background: #fff;
+    border: 1px solid #b8d48b;
+    border-radius: 20px;
+    padding: 18px 20px;
+  }
+
+  .stat-label {
+    font-size: 15px;
+    color: #48685a;
+    margin-bottom: 10px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0f3f33;
+    line-height: 1.1;
+  }
+
+  .stat-note {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #1ca36d;
+  }
+
+  .stat-note.red {
+    color: #e05555;
+  }
+
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 20px;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid #b8d48b;
+    border-radius: 22px;
+    padding: 22px;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .card-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #103d31;
+  }
+
+  .card-link {
+    font-size: 15px;
+    text-decoration: none;
+    color: #1ca36d;
+    font-weight: 600;
+  }
+
+  .course-list,
+  .teacher-list,
+  .activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .course-item,
+  .teacher-item,
+  .activity-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px;
+    background: #f7faf7;
+    border-radius: 18px;
+  }
+
+  .course-left,
+  .teacher-left,
+  .activity-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: #e7eddc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .course-info,
+  .teacher-info,
+  .activity-info {
+    min-width: 0;
+  }
+
+  .course-name,
+  .teacher-name,
+  .activity-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #103d31;
+    margin-bottom: 4px;
+  }
+
+  .course-meta,
+  .teacher-meta,
+  .activity-meta {
+    font-size: 14px;
+    color: #587365;
+  }
+
+  .course-right {
+    min-width: 95px;
+    text-align: right;
+  }
+
+  .progress-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #eef5dd;
+    color: #0f3f33;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .progress-line {
+    width: 76px;
+    height: 6px;
+    border-radius: 999px;
+    background: #e1e9da;
+    overflow: hidden;
+    margin-left: auto;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 999px;
+  }
+
+  .fill-green { background: #2ca56d; }
+  .fill-orange { background: #e59d2a; }
+  .fill-blue { background: #3f86d9; }
+
+  .join-card {
+    margin-bottom: 20px;
+  }
+
+  .join-card p {
+    margin: 0 0 14px;
+    color: #587365;
+    line-height: 1.5;
+  }
+
+  .join-form input {
+    width: 100%;
+    padding: 15px 18px;
+    border: 1px solid #cfe0d4;
+    border-radius: 16px;
+    font-size: 16px;
+    box-sizing: border-box;
+    outline: none;
+    background: #f9fcfa;
+    transition: 0.2s ease;
+  }
+
+  .join-form input:focus {
+    border-color: #2aa36b;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(42, 163, 107, 0.12);
+  }
+
+  .form-row {
+    margin-bottom: 14px;
+  }
+
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 22px;
+    border-radius: 14px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    border: none;
+    cursor: pointer;
+    background: #26a269;
+    color: #fff;
+    transition: 0.2s ease;
+  }
+
+  .btn:hover {
+    background: #1f8c5a;
+  }
+
+  .btn-secondary {
+    background: #eef4f0;
+    color: #244636;
+  }
+
+  .btn-secondary:hover {
+    background: #dfe9e3;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: #eaf6ee;
+    color: #23784f;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .muted {
+    color: #6d8377;
+    margin: 0;
+  }
+
+  .errorlist {
+    margin: 10px 0 0;
+    padding: 10px 14px;
+    list-style: none;
+    border-radius: 12px;
+    background: #fff1f1;
+    color: #c44444;
+    font-size: 14px;
+  }
+  html, body {
+  height: 100%;
+  margin: 0;
+  background: #f3f5f1; /* той самий колір */
+}
+
+  @media (max-width: 980px) {
+    .stats-grid,
+    .main-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="student-dashboard">
+  <p class="welcome-line">
+    Привіт, {{ request.user.first_name }}! Тут ти можеш керувати своїм навчанням.
+  </p>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Підключено вчителів</div>
+      <div class="stat-value">{{ teacher_links|length }}</div>
+      <div class="stat-note">Активний профіль</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Виконано дій</div>
+      <div class="stat-value">14 / 17</div>
+      <div class="stat-note red">2 очікують уваги</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Відвідуваність</div>
+      <div class="stat-value">90%</div>
+      <div class="stat-note">9 з 10 занять</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Мої курси</h2>
+        <a href="#" class="card-link">Всі →</a>
+      </div>
+
+      <div class="course-list">
+        <div class="course-item">
+          <div class="course-left">
+            <div class="icon-box">📘</div>
+            <div class="course-info">
+              <div class="course-name">Математика</div>
+              <div class="course-meta">Основний курс</div>
+            </div>
+          </div>
+          <div class="course-right">
+            <div class="progress-badge">82%</div>
+            <div class="progress-line">
+              <div class="progress-fill fill-green" style="width: 82%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="course-item">
+          <div class="course-left">
+            <div class="icon-box">📗</div>
+            <div class="course-info">
+              <div class="course-name">Англійська мова</div>
+              <div class="course-meta">Додатковий курс</div>
+            </div>
+          </div>
+          <div class="course-right">
+            <div class="progress-badge">55%</div>
+            <div class="progress-line">
+              <div class="progress-fill fill-orange" style="width: 55%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="course-item">
+          <div class="course-left">
+            <div class="icon-box">📙</div>
+            <div class="course-info">
+              <div class="course-name">Фізика</div>
+              <div class="course-meta">Поточний модуль</div>
+            </div>
+          </div>
+          <div class="course-right">
+            <div class="progress-badge">38%</div>
+            <div class="progress-line">
+              <div class="progress-fill fill-blue" style="width: 38%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Мої вчителі</h2>
+      </div>
+
+      {% if teacher_links %}
+        <div class="teacher-list">
+          {% for link in teacher_links %}
+            <div class="teacher-item">
+              <div class="teacher-left">
+                <div class="icon-box">👩‍🏫</div>
+                <div class="teacher-info">
+                  <div class="teacher-name">
+                    {{ link.teacher.user.first_name }}{% if link.teacher.user.last_name %} {{ link.teacher.user.last_name }}{% endif %}
+                  </div>
+                  <div class="teacher-meta">{{ link.teacher.user.email }}</div>
+                </div>
+              </div>
+              <span class="status-badge">Підключено</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="activity-list">
+          <div class="activity-item">
+            <div class="activity-left">
+              <div class="icon-box">ℹ️</div>
+              <div class="activity-info">
+                <div class="activity-name">Поки що немає вчителів</div>
+                <div class="activity-meta">Додай вчителя за кодом доступу нижче</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card join-card">
+    <div class="card-header">
+      <h2 class="card-title">Приєднатися до вчителя</h2>
+    </div>
+
+    <form method="post" class="join-form">
       {% csrf_token %}
+
+      <p>Введи код доступу, який надав вчитель, щоб додати його до свого кабінету.</p>
 
       {% if form.non_field_errors %}
         <ul class="errorlist">
@@ -21,7 +433,7 @@
         </ul>
       {% endif %}
 
-      <div style="margin-bottom:12px;">
+      <div class="form-row">
         {{ form.access_code }}
         {% if form.access_code.errors %}
           <ul class="errorlist">
@@ -32,26 +444,11 @@
         {% endif %}
       </div>
 
-      <button type="submit" class="btn">Додати вчителя</button>
+      <div class="btn-row">
+        <button type="submit" class="btn">Додати вчителя</button>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Оновити кабінет</a>
+      </div>
     </form>
   </div>
-
-  <div class="actions">
-    <a href="{% url 'home' %}" class="btn btn-secondary">На головну</a>
-    <a href="{% url 'dashboard' %}" class="btn">Оновити кабінет</a>
-  </div>
-
-  <div class="section">
-    <h2>Мої вчителі</h2>
-
-    {% if teacher_links %}
-      <ul class="list">
-        {% for link in teacher_links %}
-          <li>{{ link.teacher.user.first_name }} — {{ link.teacher.user.email }}</li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="muted">Поки що вчителів немає.</p>
-    {% endif %}
-  </div>
+</div>
 {% endblock %}
