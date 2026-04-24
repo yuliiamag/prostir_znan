@@ -7,9 +7,9 @@ from datetime import timedelta
 from django.db.models import Q
 from django.utils import timezone
 import calendar
-from datetime import date
+from datetime import date, datetime, timedelta
 import locale
-from .models import CalendarEvent
+from .models import CalendarEvent, StudentProfile
 
 def home(request):
     return render(request, "core/home.html")
@@ -219,3 +219,184 @@ def teacher_profile(request):
             "is_edit": is_edit,
         },
     )
+@login_required
+def create_lesson(request):
+    teacher_profile = TeacherProfile.objects.filter(user=request.user).first()
+
+    if not teacher_profile:
+        messages.error(request, "Профіль вчителя не знайдено.")
+        return redirect("teacher_dashboard")
+
+    student_profiles = StudentProfile.objects.filter(
+        teacher_links__teacher=teacher_profile
+    ).select_related("user").distinct().order_by("user__first_name", "user__last_name")
+
+    durations = [30, 45, 60, 90, 120]
+    weekdays = [
+        {"value": "mon", "label": "Пн"},
+        {"value": "tue", "label": "Вт"},
+        {"value": "wed", "label": "Ср"},
+        {"value": "thu", "label": "Чт"},
+        {"value": "fri", "label": "Пт"},
+        {"value": "sat", "label": "Сб"},
+        {"value": "sun", "label": "Нд"},
+    ]
+
+    delivery_methods = [
+        "Текст у платформі",
+        "Фото",
+        "Файл",
+        "Посилання",
+        "Усно на уроці",
+    ]
+
+    form_data = {
+        "student_id": "",
+        "topic": "",
+        "lesson_date": "",
+        "lesson_time": "",
+        "duration": "30",
+        "custom_duration": "",
+        "repeat_days": [],
+        "homework": "",
+        "homework_deadline": "",
+        "delivery_method": "Текст у платформі",
+        "notify_student": "on",
+    }
+
+    if request.method == "POST":
+        form_data["student_id"] = request.POST.get("student_id", "")
+        form_data["topic"] = request.POST.get("topic", "").strip()
+        form_data["lesson_date"] = request.POST.get("lesson_date", "")
+        form_data["lesson_time"] = request.POST.get("lesson_time", "")
+        form_data["duration"] = request.POST.get("duration", "30")
+        form_data["custom_duration"] = request.POST.get("custom_duration", "").strip()
+        form_data["repeat_days"] = request.POST.getlist("repeat_days")
+        form_data["homework"] = request.POST.get("homework", "").strip()
+        form_data["homework_deadline"] = request.POST.get("homework_deadline", "")
+        form_data["delivery_method"] = request.POST.get("delivery_method", "Текст у платформі")
+        form_data["notify_student"] = request.POST.get("notify_student", "")
+
+        errors = []
+
+        if not form_data["student_id"]:
+            errors.append("Оберіть учня.")
+        if not form_data["topic"]:
+            errors.append("Вкажіть тему уроку.")
+        if not form_data["lesson_date"]:
+            errors.append("Оберіть дату уроку.")
+        if not form_data["lesson_time"]:
+            errors.append("Оберіть час початку.")
+        if form_data["duration"] == "custom" and not form_data["custom_duration"]:
+            errors.append("Вкажіть власну тривалість уроку.")
+
+        selected_student = student_profiles.filter(id=form_data["student_id"]).first()
+
+        if not selected_student and form_data["student_id"]:
+            errors.append("Обраного учня не знайдено.")
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+        else:
+            duration_minutes = (
+                int(form_data["custom_duration"])
+                if form_data["duration"] == "custom"
+                else int(form_data["duration"])
+            )
+
+            start_dt = datetime.strptime(
+                f'{form_data["lesson_date"]} {form_data["lesson_time"]}',
+                "%Y-%m-%d %H:%M"
+            )
+            end_dt = start_dt + timedelta(minutes=duration_minutes)
+
+            CalendarEvent.objects.create(
+                title=form_data["topic"],
+                event_type="lesson",
+                description=form_data["homework"] or "",
+                start_time=start_dt,
+                end_time=end_dt,
+                teacher=request.user,
+                student=selected_student.user,
+            )
+
+            messages.success(request, "Урок успішно створено.")
+            return redirect("teacher_dashboard")
+
+    context = {
+        "students": student_profiles,
+        "durations": durations,
+        "weekdays": weekdays,
+        "delivery_methods": delivery_methods,
+        "form_data": form_data,
+        "selected_student": None,
+        "duration_text": "30 хв",
+        "repeat_days_labels": [],
+    }
+    return render(request, "core/create_lesson.html", context)
+
+@login_required
+def lessons_view(request):
+    today = date.today()
+
+    if hasattr(request.user, "teacher_profile"):
+        lessons = CalendarEvent.objects.filter(
+            teacher=request.user,
+            event_type="lesson"
+        ).order_by("start_time")
+
+        role = "teacher"
+
+    elif hasattr(request.user, "student_profile"):
+        lessons = CalendarEvent.objects.filter(
+            student=request.user,
+            event_type="lesson"
+        ).order_by("start_time")
+
+        role = "student"
+
+    else:
+        lessons = CalendarEvent.objects.none()
+        role = None
+
+    today_lessons = []
+    future_lessons = []
+    past_lessons = []
+
+    for lesson in lessons:
+        lesson_date = lesson.start_time.date()
+
+        if lesson_date == today:
+            today_lessons.append(lesson)
+        elif lesson_date > today:
+            future_lessons.append(lesson)
+        else:
+            past_lessons.append(lesson)
+
+    context = {
+        "role": role,
+        "today": today,
+        "today_lessons": today_lessons,
+        "future_lessons": future_lessons,
+        "past_lessons": past_lessons,
+        "total_lessons": lessons.count(),
+        "planned_lessons": len(today_lessons) + len(future_lessons),
+        "past_count": len(past_lessons),
+    }
+
+    return render(request, "core/lessons.html", context)
+
+@login_required
+def calendar_day_view(request, year, month, day):
+    selected_date = date(year, month, day)
+
+    events = CalendarEvent.objects.filter(
+        Q(teacher=request.user) | Q(student=request.user),
+        start_time__date=selected_date
+    ).order_by("start_time")
+
+    return render(request, "core/calendar_day.html", {
+        "selected_date": selected_date,
+        "events": events,
+    })

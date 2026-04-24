@@ -1,0 +1,777 @@
+{% extends "base.html" %}
+
+{% block title %}Новий урок • MathSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #f3f5f1;
+  }
+
+  .lesson-create-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 18px 10px 24px;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    text-decoration: none;
+    font-size: 16px;
+    color: #5a7b38;
+    font-weight: 500;
+  }
+
+  .back-link:hover {
+    text-decoration: underline;
+  }
+
+  .page-title {
+    margin: 0 0 8px;
+    font-size: 34px;
+    line-height: 1.05;
+    color: #045055;
+    font-weight: 600;
+  }
+
+  .page-subtitle {
+    margin: 0 0 20px;
+    font-size: 10px;
+    color: #667c63;
+  }
+
+  .messages-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .msg {
+    padding: 14px 16px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .msg-success {
+    background: #edf8ea;
+    border: 1px solid #acd48d;
+    color: #2f6a2b;
+  }
+
+  .msg-error {
+    background: #fff0f0;
+    border: 1px solid #efb4b4;
+    color: #a23e3e;
+  }
+
+  .lesson-form {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .section-card {
+    background: #fcfcfc;
+    border: 1.5px solid #b9d68f;
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .step-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #18a06c;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #045055;
+  }
+
+  .student-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .student-option input[type="radio"] {
+    display: none;
+  }
+
+  .student-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border: 1.5px solid #b9d68f;
+    border-radius: 20px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: 0.2s ease;
+    background: #fff;
+  }
+
+  .student-option input[type="radio"]:checked + .student-card {
+    background: #edf4e4;
+    border-color: #18a06c;
+  }
+
+  .student-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .student-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f3e9d8;
+    color: #7b5412;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .student-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #045055;
+    margin-bottom: 4px;
+  }
+
+  .student-meta {
+    font-size: 12px;
+    color: #59705f;
+  }
+
+  .student-check {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid #abc97d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    flex-shrink: 0;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .student-option input[type="radio"]:checked + .student-card .student-check {
+    background: #18a06c;
+    border-color: #18a06c;
+    color: #fff;
+  }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .field-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .field-grid input[type="date"],
+.field-grid input[type="time"] {
+  height: 44px;
+  padding: 6px 8px;
+  font-size: 10px;
+  border-radius: 10px;
+}
+
+  .field-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .field-block.full {
+    grid-column: 1 / -1;
+  }
+
+  .field-label {
+    font-size: 14px;
+    color: #567237;
+    font-weight: 600;
+  }
+
+  .field-label .required {
+    color: #d44f4f;
+  }
+
+  .field-input,
+  .field-select,
+  .field-textarea {
+    width: 100%;
+    border: 1.5px solid #b9d68f;
+    border-radius: 18px;
+    background: #fff;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #045055;
+    outline: none;
+    box-sizing: border-box;
+    transition: 0.2s ease;
+  }
+.field-input {
+  height: 34px;
+}
+  .field-input:focus,
+  .field-select:focus,
+  .field-textarea:focus {
+    border-color: #18a06c;
+    box-shadow: 0 0 0 3px rgba(24,160,108,0.08);
+  }
+
+  .field-textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  .duration-grid,
+  .repeat-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+  }
+
+  .duration-option input,
+  .repeat-option input {
+    display: none;
+  }
+
+  .duration-pill,
+  .repeat-pill {
+    border: 1.5px solid #b9d68f;
+    border-radius: 18px;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #476b66;
+    background: #fff;
+    cursor: pointer;
+    transition: 0.2s ease;
+    text-align: center;
+    padding: 0 10px;
+  }
+
+  .duration-option input:checked + .duration-pill,
+  .repeat-option input:checked + .repeat-pill {
+    background: #edf4e4;
+    border-color: #18a06c;
+    color: #045055;
+  }
+
+  .hint {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #95b55d;
+  }
+
+  .summary-card {
+    background: #eef4e3;
+    border-radius: 24px;
+    padding: 14px 16px;
+  }
+
+  .summary-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    padding: 10px 0;
+    border-bottom: 1px solid #d3e2bf;
+  }
+
+  .summary-row:last-child {
+    border-bottom: none;
+  }
+
+  .summary-label {
+    color: #5b6f2b;
+    font-size: 17px;
+  }
+
+  .summary-value {
+    color: #045055;
+    font-size: 17px;
+    font-weight: 700;
+    text-align: right;
+  }
+
+  .bottom-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .actions-left {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    border: none;
+    border-radius: 20px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: 0.2s ease;
+  }
+
+  .btn-primary {
+    background: #18a06c;
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    background: #13885c;
+  }
+
+  .btn-secondary {
+    background: #fff;
+    color: #5c6d41;
+    border: 1.5px solid #cbdcad;
+  }
+
+  .btn-secondary:hover {
+    background: #f7faf3;
+  }
+
+  .notify-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .notify-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #18a06c;
+  }
+
+  @media (max-width: 900px) {
+    .page-title {
+      font-size: 40px;
+    }
+
+    .page-subtitle {
+      font-size: 18px;
+    }
+
+    .field-grid,
+    .field-grid-3,
+    .duration-grid,
+    .repeat-grid {
+      grid-template-columns: 1fr;
+    }
+    .student-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.student-list::-webkit-scrollbar-track {
+  background: #edf4e4;
+  border-radius: 999px;
+}
+
+.student-list::-webkit-scrollbar-thumb {
+  background: #b7d38d;
+  border-radius: 999px;
+}
+
+.student-list::-webkit-scrollbar-thumb:hover {
+  background: #97bd67;
+}
+
+    .summary-row {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .summary-value {
+      text-align: left;
+    }
+  }
+
+
+  @media (max-width: 640px) {
+    .lesson-create-page {
+      padding: 12px 8px 18px;
+    }
+
+    .section-card {
+      padding: 20px;
+      border-radius: 22px;
+    }
+
+    .page-title {
+      font-size: 30px;
+    }
+
+    .btn {
+      width: 100%;
+      text-align: center;
+    }
+
+    .actions-left,
+    .bottom-actions {
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lesson-create-page">
+  <a href="{% url 'teacher_dashboard' %}" class="back-link">← Назад</a>
+
+  <h1 class="page-title">Новий урок</h1>
+  <p class="page-subtitle">Заплануй урок — учень отримає сповіщення автоматично</p>
+
+  {% if messages %}
+    <div class="messages-wrap">
+      {% for message in messages %}
+        <div class="msg {% if message.tags == 'success' %}msg-success{% else %}msg-error{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" class="lesson-form">
+    {% csrf_token %}
+
+    <section class="section-card">
+      <div class="section-header">
+        <div class="step-circle">1</div>
+        <h2 class="section-title">Оберіть учня</h2>
+      </div>
+
+     <div class="student-list">
+  {% for student in students %}
+    <label class="student-option">
+      <input
+          type="radio"
+          name="student_id"
+          value="{{ student.id }}"
+          data-name="{{ student.user.first_name }} {{ student.user.last_name }}"
+        >
+      <div class="student-card">
+        <div class="student-left">
+          <div class="student-avatar">
+            {{ student.user.first_name|slice:":1" }}{{ student.user.last_name|slice:":1" }}
+          </div>
+          <div>
+            <div class="student-name">
+              {{ student.user.first_name }} {{ student.user.last_name }}
+            </div>
+            <div class="student-meta">
+              {{ student.class_name|default:"—" }} · {{ student.subject|default:"Математика" }}
+            </div>
+          </div>
+        </div>
+        <div class="student-check">✓</div>
+      </div>
+    </label>
+  {% empty %}
+    <div class="empty-students">
+      У тебе ще немає приєднаних учнів.
+    </div>
+  {% endfor %}
+</div>
+</div>
+    <section class="section-card">
+      <div class="section-header">
+        <div class="step-circle">2</div>
+        <h2 class="section-title">Тема уроку</h2>
+      </div>
+
+      <div class="field-grid">
+        <div class="field-block full">
+          <label class="field-label">Тема <span class="required">*</span></label>
+          <input type="text" name="topic" id="topic" class="field-input">
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-header">
+        <div class="step-circle">3</div>
+        <h2 class="section-title">Дата і час</h2>
+      </div>
+
+      <div class="field-grid">
+        <div class="field-block">
+          <label class="field-label">Дата <span class="required">*</span></label>
+          <input type="date" name="lesson_date" id="lesson_date" class="field-input">
+        </div>
+
+        <div class="field-block">
+          <label class="field-label">Час початку <span class="required">*</span></label>
+          <input type="time" name="lesson_time" id="lesson_time" class="field-input">
+        </div>
+      </div>
+
+      <div class="field-block" style="margin-top:20px;">
+        <label class="field-label">Тривалість</label>
+        <div class="duration-grid">
+          {% for item in durations %}
+            <label class="duration-option">
+              <input
+                type="radio"
+                name="duration"
+                value="{{ item }}"
+                {% if form_data.duration == item|stringformat:"s" %}checked{% endif %}
+              >
+              <span class="duration-pill">{{ item }} хв</span>
+            </label>
+          {% endfor %}
+
+          <label class="duration-option">
+            <input
+              type="radio"
+              name="duration"
+              value="custom"
+              {% if form_data.duration == "custom" %}checked{% endif %}
+            >
+            <span class="duration-pill">Інше</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field-block" style="margin-top:16px;">
+        <label class="field-label">Власна тривалість (якщо обрано “Інше”)</label>
+        <input
+          type="number"
+          name="custom_duration"
+          class="field-input"
+          min="1"
+          placeholder="Наприклад: 75"
+          value="{{ form_data.custom_duration }}"
+        >
+      </div>
+
+      <div class="field-block" style="margin-top:20px;">
+        <label class="field-label">Повторення щотижня</label>
+        <div class="repeat-grid">
+          {% for day in weekdays %}
+            <label class="repeat-option">
+              <input
+                type="checkbox"
+                name="repeat_days"
+                value="{{ day.value }}"
+                {% if day.value in form_data.repeat_days %}checked{% endif %}
+              >
+              <span class="repeat-pill">{{ day.label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        <div class="hint">Обрані дні — урок повторюватиметься щотижня</div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-header">
+        <div class="step-circle">4</div>
+        <h2 class="section-title">Сповіщення учню</h2>
+      </div>
+
+      <div class="notify-row">
+        <input
+          type="checkbox"
+          name="notify_student"
+          id="notify_student"
+          {% if form_data.notify_student %}checked{% endif %}
+        >
+        <label for="notify_student" style="font-size:16px; color:#476b66;">
+          Надіслати сповіщення учню одразу після збереження уроку
+        </label>
+      </div>
+    </section>
+    </section>
+
+    <section class="section-card">
+      <div class="section-header">
+        <div class="step-circle">✓</div>
+        <h2 class="section-title">Підсумок уроку</h2>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-row">
+          <div class="summary-label">Учень</div>
+          <div class="summary-value" id="summary-student">—</div>
+        </div>
+
+        <div class="summary-row">
+          <div class="summary-label">Тема</div>
+          <div class="summary-value" id="summary-topic">—</div>
+        </div>
+
+        <div class="summary-row">
+          <div class="summary-label">Дата і час</div>
+          <div class="summary-value" id="summary-datetime">—</div>
+        </div>
+
+        <div class="summary-row">
+          <div class="summary-label">Тривалість</div>
+          <div class="summary-value" id="summary-duration">30 хв</div>
+        </div>
+
+        <div class="summary-row">
+          <div class="summary-label">Повторення</div>
+          <div class="summary-value" id="summary-repeat">Без повторення</div>
+        </div>
+
+        <div class="summary-row">
+          <div class="summary-label">Сповіщення учню</div>
+          <div class="summary-value" id="summary-notify">Буде відправлено одразу</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="bottom-actions">
+      <div class="actions-left">
+        <button type="submit" class="btn btn-primary">Зберегти урок</button>
+      </div>
+
+      <a href="{% url 'teacher_dashboard' %}" class="btn btn-secondary">Скасувати</a>
+    </div>
+  </form>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const studentInputs = document.querySelectorAll('input[name="student_id"]');
+  const topicInput = document.getElementById("topic");
+  const dateInput = document.getElementById("lesson_date");
+  const timeInput = document.getElementById("lesson_time");
+  const homeworkInput = document.getElementById("homework");
+  const notifyInput = document.getElementById("notify_student");
+  const durationInputs = document.querySelectorAll('input[name="duration"]');
+  const customDurationInput = document.getElementById("custom_duration");
+  const repeatInputs = document.querySelectorAll('input[name="repeat_days"]');
+
+  const summaryStudent = document.getElementById("summary-student");
+  const summaryTopic = document.getElementById("summary-topic");
+  const summaryDatetime = document.getElementById("summary-datetime");
+  const summaryDuration = document.getElementById("summary-duration");
+  const summaryRepeat = document.getElementById("summary-repeat");
+  const summaryHomework = document.getElementById("summary-homework");
+  const summaryNotify = document.getElementById("summary-notify");
+
+  function updateStudent() {
+    const selected = document.querySelector('input[name="student_id"]:checked');
+    summaryStudent.textContent = selected ? selected.dataset.name : "—";
+  }
+
+  function updateTopic() {
+    summaryTopic.textContent = topicInput.value.trim() || "—";
+  }
+
+  function updateDatetime() {
+    const date = dateInput.value;
+    const time = timeInput.value;
+    summaryDatetime.textContent = (date && time) ? `${date} · ${time}` : "—";
+  }
+
+  function updateDuration() {
+    const selected = document.querySelector('input[name="duration"]:checked');
+
+    if (!selected) {
+      summaryDuration.textContent = "30 хв";
+      return;
+    }
+
+    if (selected.value === "custom") {
+      summaryDuration.textContent = customDurationInput.value.trim()
+        ? `${customDurationInput.value.trim()} хв`
+        : "Інше";
+    } else {
+      summaryDuration.textContent = `${selected.value} хв`;
+    }
+  }
+
+  function updateRepeat() {
+    const selectedDays = Array.from(repeatInputs)
+      .filter(input => input.checked)
+      .map(input => input.nextElementSibling.textContent.trim());
+
+    summaryRepeat.textContent = selectedDays.length
+      ? `${selectedDays.join(", ")} щотижня`
+      : "Без повторення";
+  }
+
+  function updateHomework() {
+    summaryHomework.textContent = homeworkInput.value.trim() ? "Додано" : "Не додано";
+  }
+
+  function updateNotify() {
+    summaryNotify.textContent = notifyInput.checked
+      ? "Буде відправлено одразу"
+      : "Не надсилати";
+  }
+
+  function updateAll() {
+    updateStudent();
+    updateTopic();
+    updateDatetime();
+    updateDuration();
+    updateRepeat();
+    updateHomework();
+    updateNotify();
+  }
+
+  studentInputs.forEach(input => input.addEventListener("change", updateStudent));
+  durationInputs.forEach(input => input.addEventListener("change", updateDuration));
+  repeatInputs.forEach(input => input.addEventListener("change", updateRepeat));
+
+  if (topicInput) topicInput.addEventListener("input", updateTopic);
+  if (dateInput) dateInput.addEventListener("change", updateDatetime);
+  if (timeInput) timeInput.addEventListener("change", updateDatetime);
+  if (homeworkInput) homeworkInput.addEventListener("input", updateHomework);
+  if (notifyInput) notifyInput.addEventListener("change", updateNotify);
+  if (customDurationInput) customDurationInput.addEventListener("input", updateDuration);
+
+  updateAll();
+});
+</script>
+{% endblock %}
