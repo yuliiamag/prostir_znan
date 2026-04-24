@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Мої заняття • MathSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+  .lessons-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .lessons-page-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #204637;
+    margin-bottom: 4px;
+  }
+
+  .lessons-page-subtitle {
+    font-size: 14px;
+    color: #5c7560;
+    margin-bottom: 20px;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .stat-card {
+    background: #f8faf7;
+    border: 1px solid #a8ca88;
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: #5c7560;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #204637;
+  }
+
+  .top-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 18px;
+  }
+
+  .add-btn {
+    padding: 9px 16px;
+    border-radius: 999px;
+    background: #204637;
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .section {
+    margin-bottom: 26px;
+  }
+
+  .section-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #204637;
+    margin-bottom: 10px;
+  }
+
+  .lesson-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #f8faf7;
+    border: 1px solid #cfe0c7;
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    color: inherit;
+    text-decoration: none;
+    transition: 0.2s;
+  }
+
+  .lesson-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(32, 70, 55, 0.08);
+  }
+
+  .lesson-card.today {
+    background: #eef8ea;
+    border-color: #9fcd8a;
+  }
+
+  .lesson-card.past {
+    background: #f0f1ef;
+    border-color: #d6d6d6;
+    opacity: 0.8;
+  }
+
+  .lesson-time {
+    min-width: 58px;
+    text-align: center;
+  }
+
+  .lesson-hour {
+    font-size: 15px;
+    font-weight: 700;
+    color: #204637;
+  }
+
+  .lesson-duration {
+    font-size: 11px;
+    color: #5c7560;
+  }
+
+  .lesson-info {
+    flex: 1;
+  }
+
+  .lesson-topic {
+    font-size: 15px;
+    font-weight: 700;
+    color: #204637;
+    margin-bottom: 3px;
+  }
+
+  .lesson-student {
+    font-size: 13px;
+    color: #5c7560;
+  }
+
+  .lesson-status {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .status-today {
+    background: #dff1d7;
+    color: #2f6b28;
+  }
+
+  .status-future {
+    background: #eef3ec;
+    color: #4d6951;
+  }
+
+  .status-past {
+    background: #e0e0e0;
+    color: #666;
+  }
+
+  .empty {
+    padding: 16px;
+    border-radius: 14px;
+    background: #f8faf7;
+    border: 1px solid #cfe0c7;
+    color: #5c7560;
+    font-size: 14px;
+  }
+  .lessons-scroll {
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.lessons-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lessons-scroll::-webkit-scrollbar-thumb {
+  background: #a8ca88;
+  border-radius: 999px;
+}
+  .lessons-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center; /* головне */
+  margin-bottom: 10px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lessons-wrap">
+
+  <div class="lessons-header">
+    <div>
+      <h1 class="lessons-page-title">Мої заняття</h1>
+    </div>
+
+    {% if role == "teacher" %}
+      <a href="{% url 'create_lesson' %}" class="add-btn">+ Нове заняття</a>
+    {% endif %}
+  </div>
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Всього уроків</div>
+      <div class="stat-value">{{ total_lessons }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Заплановано</div>
+      <div class="stat-value">{{ planned_lessons }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Проведено</div>
+      <div class="stat-value">{{ past_count }}</div>
+    </div>
+  </div>
+
+
+  <div class="section">
+    <h2 class="section-title">Сьогодні</h2>
+
+    <div class="lessons-scroll">
+      {% for lesson in today_lessons %}
+        <a href="#" class="lesson-card today">
+          <div class="lesson-time">
+            <div class="lesson-hour">{{ lesson.start_time|time:"H:i" }}</div>
+            <div class="lesson-duration">урок</div>
+          </div>
+
+          <div class="lesson-info">
+            <div class="lesson-topic">{{ lesson.title }}</div>
+            <div class="lesson-student">
+              {% if role == "teacher" %}
+                Учень: {{ lesson.student.first_name }} {{ lesson.student.last_name }}
+              {% else %}
+                Вчитель: {{ lesson.teacher.first_name }} {{ lesson.teacher.last_name }}
+              {% endif %}
+            </div>
+          </div>
+
+          <span class="lesson-status status-today">Сьогодні</span>
+        </a>
+      {% empty %}
+        <div class="empty">На сьогодні занять немає.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Найближчі заняття</h2>
+
+    <div class="lessons-scroll">
+      {% for lesson in future_lessons %}
+        <a href="#" class="lesson-card">
+          <div class="lesson-time">
+            <div class="lesson-hour">{{ lesson.start_time|time:"H:i" }}</div>
+            <div class="lesson-duration">урок</div>
+          </div>
+
+          <div class="lesson-info">
+            <div class="lesson-topic">{{ lesson.title }}</div>
+            <div class="lesson-student">
+              {{ lesson.start_time|date:"d.m.Y" }} ·
+              {% if role == "teacher" %}
+                {{ lesson.student.first_name }} {{ lesson.student.last_name }}
+              {% else %}
+                {{ lesson.teacher.first_name }} {{ lesson.teacher.last_name }}
+              {% endif %}
+            </div>
+          </div>
+
+          <span class="lesson-status status-future">Заплановано</span>
+        </a>
+      {% empty %}
+        <div class="empty">Найближчих занять немає.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Минулі заняття</h2>
+
+    <div class="lessons-scroll">
+      {% for lesson in past_lessons %}
+        <a href="#" class="lesson-card past">
+          <div class="lesson-time">
+            <div class="lesson-hour">{{ lesson.start_time|time:"H:i" }}</div>
+            <div class="lesson-duration">урок</div>
+          </div>
+
+          <div class="lesson-info">
+            <div class="lesson-topic">{{ lesson.title }}</div>
+            <div class="lesson-student">
+              {{ lesson.start_time|date:"d.m.Y" }} ·
+              {% if role == "teacher" %}
+                {{ lesson.student.first_name }} {{ lesson.student.last_name }}
+              {% else %}
+                {{ lesson.teacher.first_name }} {{ lesson.teacher.last_name }}
+              {% endif %}
+            </div>
+          </div>
+
+          <span class="lesson-status status-past">Проведено</span>
+        </a>
+      {% empty %}
+        <div class="empty">Минулі заняття поки відсутні.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
