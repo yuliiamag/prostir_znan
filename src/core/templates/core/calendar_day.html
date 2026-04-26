@@ -175,7 +175,7 @@
 
     <div class="event-list">
       {% for event in events %}
-        <div class="day-event">
+        <a href="{% url 'lesson_detail' event.id %}" class="day-event">
           <div class="event-time">
             <div class="event-hour">{{ event.start_time|time:"H:i" }}</div>
             <div class="event-small">урок</div>
@@ -198,7 +198,8 @@
           <span class="event-type">
             {{ event.get_event_type_display }}
           </span>
-        </div>
+
+      </a>
       {% empty %}
         <div class="empty-day">
           На цей день занятть немає.

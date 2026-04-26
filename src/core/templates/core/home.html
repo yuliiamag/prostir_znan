@@ -162,7 +162,7 @@
 <div class="top-row">
   <div>
     <h1 class="welcome-title">
-      Привіт,
+      Вітаю,
       {% if user.is_authenticated and user.first_name %}
         {{ user.first_name }}!
       {% else %}
@@ -170,11 +170,11 @@
       {% endif %}
     </h1>
 
-    <p class="welcome-date">Середа, 15 квітня 2026</p>
+    <p class="welcome-date"></p>
   </div>
 
   {% if user.is_authenticated %}
-    <button class="lesson-btn">+ Урок</button>
+
   {% else %}
 
   {% endif %}
@@ -182,8 +182,8 @@
 
 <div class="stats-grid">
   <div class="stat-card">
-    <div class="stat-title">Середній бал</div>
-    <div class="stat-value">9.2</div>
+    <div class="stat-title"></div>
+    <div class="stat-value"></div>
   </div>
 
   <div class="stat-card">
@@ -199,59 +199,13 @@
 
 <div class="bottom-grid">
   <section class="panel">
-    <h2 class="panel-title">Мої курси</h2>
 
-    <div class="item-row">
-      <div class="item-left">
-        <span class="dot dot-green"></span>
-        <span>Математика</span>
-      </div>
-      <span class="percent">82%</span>
-    </div>
-
-    <div class="item-row">
-      <div class="item-left">
-        <span class="dot dot-light"></span>
-        <span>Англійська</span>
-      </div>
-      <span class="percent">55%</span>
-    </div>
-
-    <div class="item-row">
-      <div class="item-left">
-        <span class="dot dot-soft"></span>
-        <span>Фізика</span>
-      </div>
-      <span class="percent">38%</span>
-    </div>
   </section>
 
   <section class="panel">
     <h2 class="panel-title">Завдання</h2>
 
-    <div class="item-row">
-      <div class="item-left">
-        <span class="dot dot-red"></span>
-        <span>Похідні</span>
-      </div>
-      <span class="badge badge-submit">здати</span>
-    </div>
 
-    <div class="item-row">
-      <div class="item-left">
-        <span class="dot dot-green"></span>
-        <span>Unit 5</span>
-      </div>
-      <span class="badge badge-done">здано</span>
-    </div>
-
-    <div class="item-row">
-      <div class="item-left">
-        <span class="dot dot-red"></span>
-        <span>Ньютон</span>
-      </div>
-      <span class="badge badge-late">прострочено</span>
-    </div>
   </section>
 </div>
 {% endblock %}

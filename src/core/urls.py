@@ -16,6 +16,11 @@ urlpatterns = [
     path("lesson/new/", views.create_lesson, name="create_lesson"),
     path("lessons/", views.lessons_view, name="lessons"),
     path("calendar/<int:year>/<int:month>/<int:day>/", views.calendar_day_view, name="calendar_day"),
+    path("teacher/add-student/", views.add_student_manual, name="add_student_manual"),
+    path("teacher/generate-code/", views.generate_teacher_code, name="generate_teacher_code"),
+    path("lesson/<int:lesson_id>/", views.lesson_detail, name="lesson_detail"),
+    path("lesson/<int:lesson_id>/edit/", views.create_lesson, name="edit_lesson"),
+    path("student/profile/", views.student_profile, name="student_profile"),
 ]
 
 
