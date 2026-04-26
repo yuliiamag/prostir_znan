@@ -495,6 +495,7 @@
           name="student_id"
           value="{{ student.id }}"
           data-name="{{ student.user.first_name }} {{ student.user.last_name }}"
+          {% if form_data.student_id == student.user.id|stringformat:"s" %}checked{% endif %}
         >
       <div class="student-card">
         <div class="student-left">
@@ -529,7 +530,7 @@
       <div class="field-grid">
         <div class="field-block full">
           <label class="field-label">Тема <span class="required">*</span></label>
-          <input type="text" name="topic" id="topic" class="field-input">
+          <input type="text" name="topic" id="topic" class="field-input" value="{{ form_data.topic }}">
         </div>
       </div>
     </section>
@@ -543,12 +544,12 @@
       <div class="field-grid">
         <div class="field-block">
           <label class="field-label">Дата <span class="required">*</span></label>
-          <input type="date" name="lesson_date" id="lesson_date" class="field-input">
+          <input type="date" name="lesson_date" id="lesson_date" class="field-input" value="{{ form_data.lesson_date }}">
         </div>
 
         <div class="field-block">
           <label class="field-label">Час початку <span class="required">*</span></label>
-          <input type="time" name="lesson_time" id="lesson_time" class="field-input">
+          <input type="time" name="lesson_time" id="lesson_time" class="field-input" value="{{ form_data.lesson_time }}">
         </div>
       </div>
 

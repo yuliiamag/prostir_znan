@@ -2,192 +2,230 @@
 
 {% block title %}Кабінет учня • MathSpace{% endblock %}
 
-{% block content %}
+{% block extra_css %}
 <style>
-  .student-dashboard {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0 24px 24px;
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #f3f5f1;
   }
 
-  .welcome-line {
-    margin: 0 0 22px;
+  .student-main {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .greeting h1 {
+    margin: 0 0 6px;
+    font-size: 38px;
+    line-height: 1.1;
+    color: #1d5f4f;
+  }
+
+  .greeting p {
+    margin: 0;
+    font-size: 16px;
+    color: #51756a;
+  }
+
+  .topbar-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    border: 1px solid #b7d38d;
+    background: #fff;
+    color: #205244;
+    text-decoration: none;
+    border-radius: 16px;
+    padding: 14px 18px;
+    font-weight: 700;
+  }
+
+  .next-lesson {
+    background: #0c5f4f;
+    color: #fff;
+    border-radius: 24px;
+    padding: 24px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .next-lesson-title {
     font-size: 20px;
-    color: #4f6f61;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .next-lesson-subtitle {
+    font-size: 16px;
+    opacity: 0.92;
+  }
+
+  .lesson-btn {
+    display: inline-block;
+    background: transparent;
+    border: 1.5px solid rgba(255,255,255,0.4);
+    color: #fff;
+    text-decoration: none;
+    padding: 16px 24px;
+    border-radius: 18px;
+    font-weight: 700;
+    font-size: 18px;
   }
 
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 22px;
-  }
-
-  .stat-card {
-    background: #fff;
-    border: 1px solid #b8d48b;
-    border-radius: 20px;
-    padding: 18px 20px;
-  }
-
-  .stat-label {
-    font-size: 15px;
-    color: #48685a;
-    margin-bottom: 10px;
-  }
-
-  .stat-value {
-    font-size: 24px;
-    font-weight: 700;
-    color: #0f3f33;
-    line-height: 1.1;
-  }
-
-  .stat-note {
-    margin-top: 8px;
-    font-size: 14px;
-    color: #1ca36d;
-  }
-
-  .stat-note.red {
-    color: #e05555;
-  }
-
-  .main-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
     gap: 18px;
-    margin-bottom: 20px;
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 0.95fr;
+    gap: 22px;
   }
 
   .card {
     background: #fff;
-    border: 1px solid #b8d48b;
+    border: 1px solid #b7d38d;
     border-radius: 22px;
-    padding: 22px;
+    padding: 24px;
   }
 
-  .card-header {
+  .stat-card h3,
+  .card h3 {
+    margin: 0 0 14px;
+    font-size: 18px;
+    color: #245847;
+  }
+
+  .stat-value {
+    font-size: 48px;
+    line-height: 1;
+    font-weight: 800;
+    color: #0e5b4a;
+    margin-bottom: 10px;
+  }
+
+  .stat-note {
+    font-size: 15px;
+    color: #77a442;
+  }
+
+  .section-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    margin-bottom: 18px;
+    margin-bottom: 14px;
   }
 
-  .card-title {
+  .section-head h3 {
     margin: 0;
     font-size: 20px;
-    font-weight: 700;
-    color: #103d31;
+    color: #205244;
   }
 
-  .card-link {
-    font-size: 15px;
+  .section-link {
+    color: #16a06d;
     text-decoration: none;
-    color: #1ca36d;
-    font-weight: 600;
+    font-weight: 700;
   }
 
-  .course-list,
-  .teacher-list,
-  .activity-list {
+  .schedule-list,
+  .task-list {
     display: flex;
     flex-direction: column;
     gap: 14px;
   }
 
-  .course-item,
-  .teacher-item,
-  .activity-item {
+  .schedule-item,
+  .task-item {
     display: flex;
-    align-items: center;
     justify-content: space-between;
     gap: 14px;
-    padding: 16px;
-    background: #f7faf7;
-    border-radius: 18px;
+    align-items: center;
+    padding: 14px 0;
+    border-top: 1px solid #edf2ea;
+    text-decoration: none;
   }
 
-  .course-left,
-  .teacher-left,
-  .activity-left {
+  .schedule-item:first-child,
+  .task-item:first-child {
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .schedule-left,
+  .task-left {
     display: flex;
-    align-items: center;
     gap: 14px;
-    min-width: 0;
+    align-items: flex-start;
   }
 
-  .icon-box {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    background: #e7eddc;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    flex-shrink: 0;
-  }
-
-  .course-info,
-  .teacher-info,
-  .activity-info {
-    min-width: 0;
-  }
-
-  .course-name,
-  .teacher-name,
-  .activity-name {
+  .time {
+    min-width: 64px;
     font-size: 18px;
-    font-weight: 600;
-    color: #103d31;
+    font-weight: 700;
+    color: #346457;
+  }
+
+  .item-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #205244;
     margin-bottom: 4px;
   }
 
-  .course-meta,
-  .teacher-meta,
-  .activity-meta {
-    font-size: 14px;
-    color: #587365;
+  .item-subtitle {
+    font-size: 15px;
+    color: #638174;
   }
 
-  .course-right {
-    min-width: 95px;
-    text-align: right;
-  }
-
-  .progress-badge {
-    display: inline-block;
-    padding: 6px 12px;
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 999px;
-    background: #eef5dd;
-    color: #0f3f33;
+    padding: 8px 14px;
+    font-size: 14px;
     font-weight: 700;
-    font-size: 14px;
-    margin-bottom: 8px;
+    white-space: nowrap;
   }
 
-  .progress-line {
-    width: 76px;
-    height: 6px;
-    border-radius: 999px;
-    background: #e1e9da;
-    overflow: hidden;
-    margin-left: auto;
+  .pill-done {
+    background: #eef7e7;
+    color: #6a9c2f;
   }
 
-  .progress-fill {
-    height: 100%;
-    border-radius: 999px;
+  .pill-planned {
+    background: #f6eadb;
+    color: #9c6a28;
   }
 
-  .fill-green { background: #2ca56d; }
-  .fill-orange { background: #e59d2a; }
-  .fill-blue { background: #3f86d9; }
+  .pill-alert {
+    background: #fdecec;
+    color: #cf4949;
+  }
 
-  .join-card {
-    margin-bottom: 20px;
+  .pill-soft {
+    background: #f5efe9;
+    color: #9f6c52;
   }
 
   .join-card p {
@@ -198,76 +236,36 @@
 
   .join-form input {
     width: 100%;
-    padding: 15px 18px;
+    padding: 13px 15px;
     border: 1px solid #cfe0d4;
-    border-radius: 16px;
-    font-size: 16px;
+    border-radius: 14px;
+    font-size: 15px;
     box-sizing: border-box;
     outline: none;
     background: #f9fcfa;
-    transition: 0.2s ease;
-  }
-
-  .join-form input:focus {
-    border-color: #2aa36b;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(42, 163, 107, 0.12);
-  }
-
-  .form-row {
-    margin-bottom: 14px;
   }
 
   .btn-row {
     display: flex;
+    gap: 10px;
+    margin-top: 12px;
     flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 8px;
   }
 
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 22px;
-    border-radius: 14px;
+  .small-btn {
+    border: 1px solid #b7d38d;
+    background: #fff;
+    color: #205244;
     text-decoration: none;
-    font-weight: 600;
-    font-size: 15px;
-    border: none;
+    border-radius: 12px;
+    padding: 9px 13px;
+    font-weight: 700;
+    font-size: 13px;
     cursor: pointer;
-    background: #26a269;
-    color: #fff;
-    transition: 0.2s ease;
   }
 
-  .btn:hover {
-    background: #1f8c5a;
-  }
-
-  .btn-secondary {
-    background: #eef4f0;
-    color: #244636;
-  }
-
-  .btn-secondary:hover {
-    background: #dfe9e3;
-  }
-
-  .status-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 7px 12px;
-    border-radius: 999px;
-    background: #eaf6ee;
-    color: #23784f;
-    font-size: 14px;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  .muted {
-    color: #6d8377;
+  .empty-text {
+    color: #638174;
     margin: 0;
   }
 
@@ -280,150 +278,113 @@
     color: #c44444;
     font-size: 14px;
   }
-  html, body {
-  height: 100%;
-  margin: 0;
-  background: #f3f5f1; /* той самий колір */
-}
 
-  @media (max-width: 980px) {
+  @media (max-width: 1200px) {
     .stats-grid,
-    .main-grid {
+    .content-grid {
       grid-template-columns: 1fr;
     }
   }
+
+  @media (max-width: 640px) {
+    .card,
+    .next-lesson {
+      padding: 18px;
+    }
+
+    .greeting h1 {
+      font-size: 30px;
+    }
+
+    .topbar-actions {
+      width: 100%;
+    }
+
+    .action-btn {
+      flex: 1;
+      text-align: center;
+    }
+  }
 </style>
+{% endblock %}
 
-<div class="student-dashboard">
-  <p class="welcome-line">
-    Привіт, {{ request.user.first_name }}! Тут ти можеш керувати своїм навчанням.
-  </p>
+{% block content %}
+<main class="student-main">
 
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-label">Підключено вчителів</div>
-      <div class="stat-value">{{ teacher_links|length }}</div>
-      <div class="stat-note">Активний профіль</div>
+  <div class="topbar">
+    <div class="greeting">
+      <h1>Привіт, {{ request.user.first_name|default:"учню" }}!</h1>
+      <p>Тут твої уроки, вчителі та домашні завдання.</p>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-label">Виконано дій</div>
-      <div class="stat-value">14 / 17</div>
-      <div class="stat-note red">2 очікують уваги</div>
-    </div>
-
-    <div class="stat-card">
-      <div class="stat-label">Відвідуваність</div>
-      <div class="stat-value">90%</div>
-      <div class="stat-note">9 з 10 занять</div>
+    <div class="topbar-actions">
+      <a href="{% url 'student_profile' %}" class="action-btn">Редагувати профіль</a>
+      <a href="{% url 'calendar' %}" class="action-btn">Мій календар</a>
     </div>
   </div>
 
-  <div class="main-grid">
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">Мої курси</h2>
-        <a href="#" class="card-link">Всі →</a>
-      </div>
-
-      <div class="course-list">
-        <div class="course-item">
-          <div class="course-left">
-            <div class="icon-box">📘</div>
-            <div class="course-info">
-              <div class="course-name">Математика</div>
-              <div class="course-meta">Основний курс</div>
-            </div>
-          </div>
-          <div class="course-right">
-            <div class="progress-badge">82%</div>
-            <div class="progress-line">
-              <div class="progress-fill fill-green" style="width: 82%;"></div>
-            </div>
-          </div>
+  <section class="next-lesson">
+    {% if next_lesson %}
+      <div>
+        <div class="next-lesson-title">
+          Найближчий урок:
+          {{ next_lesson.start_time|date:"d.m.Y" }}
+          о {{ next_lesson.start_time|time:"H:i" }}
         </div>
 
-        <div class="course-item">
-          <div class="course-left">
-            <div class="icon-box">📗</div>
-            <div class="course-info">
-              <div class="course-name">Англійська мова</div>
-              <div class="course-meta">Додатковий курс</div>
-            </div>
-          </div>
-          <div class="course-right">
-            <div class="progress-badge">55%</div>
-            <div class="progress-line">
-              <div class="progress-fill fill-orange" style="width: 55%;"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="course-item">
-          <div class="course-left">
-            <div class="icon-box">📙</div>
-            <div class="course-info">
-              <div class="course-name">Фізика</div>
-              <div class="course-meta">Поточний модуль</div>
-            </div>
-          </div>
-          <div class="course-right">
-            <div class="progress-badge">38%</div>
-            <div class="progress-line">
-              <div class="progress-fill fill-blue" style="width: 38%;"></div>
-            </div>
-          </div>
+        <div class="next-lesson-subtitle">
+          {{ next_lesson.teacher.first_name }} {{ next_lesson.teacher.last_name }}
+          · {{ next_lesson.title|default:"Урок" }}
+          {% if next_lesson.end_time %}
+            · {{ next_lesson.start_time|time:"H:i" }}–{{ next_lesson.end_time|time:"H:i" }}
+          {% endif %}
         </div>
       </div>
-    </div>
 
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">Мої вчителі</h2>
-      </div>
-
-      {% if teacher_links %}
-        <div class="teacher-list">
-          {% for link in teacher_links %}
-            <div class="teacher-item">
-              <div class="teacher-left">
-                <div class="icon-box">👩‍🏫</div>
-                <div class="teacher-info">
-                  <div class="teacher-name">
-                    {{ link.teacher.user.first_name }}{% if link.teacher.user.last_name %} {{ link.teacher.user.last_name }}{% endif %}
-                  </div>
-                  <div class="teacher-meta">{{ link.teacher.user.email }}</div>
-                </div>
-              </div>
-              <span class="status-badge">Підключено</span>
-            </div>
-          {% endfor %}
-        </div>
+      {% if next_lesson.meeting_link %}
+        <a href="{{ next_lesson.meeting_link }}" class="lesson-btn" target="_blank">Приєднатися</a>
       {% else %}
-        <div class="activity-list">
-          <div class="activity-item">
-            <div class="activity-left">
-              <div class="icon-box">ℹ️</div>
-              <div class="activity-info">
-                <div class="activity-name">Поки що немає вчителів</div>
-                <div class="activity-meta">Додай вчителя за кодом доступу нижче</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <a href="{% url 'lesson_detail' next_lesson.id %}" class="lesson-btn">Переглянути</a>
       {% endif %}
-    </div>
-  </div>
+    {% else %}
+      <div>
+        <div class="next-lesson-title">Найближчого уроку поки немає</div>
+        <div class="next-lesson-subtitle">Коли вчитель запланує урок, він з’явиться тут.</div>
+      </div>
 
-  <div class="card join-card">
-    <div class="card-header">
-      <h2 class="card-title">Приєднатися до вчителя</h2>
+      <a href="{% url 'calendar' %}" class="lesson-btn">Переглянути календар</a>
+    {% endif %}
+  </section>
+
+  <section class="stats-grid">
+    <div class="card stat-card">
+      <h3>Кількість вчителів</h3>
+      <div class="stat-value">{{ teacher_links.count }}</div>
+      <div class="stat-note">Підключені до твого профілю</div>
+    </div>
+
+    <div class="card stat-card">
+      <h3>Уроків сьогодні</h3>
+      <div class="stat-value">{{ today_lessons.count }}</div>
+      <div class="stat-note">{{ completed_lessons_count }} вже завершено</div>
+    </div>
+
+    <div class="card stat-card">
+      <h3>Завдань виконано</h3>
+      <div class="stat-value">{{ completed_tasks_count|default:"0" }}/{{ total_tasks_count|default:"0" }}</div>
+      <div class="stat-note">Твій прогрес за завданнями</div>
+    </div>
+  </section>
+
+  <section class="card join-card">
+    <div class="section-head">
+      <h3>Додати вчителя</h3>
     </div>
 
     <form method="post" class="join-form">
       {% csrf_token %}
 
-      <p>Введи код доступу, який надав вчитель, щоб додати його до свого кабінету.</p>
+      <p>Введи код доступу, який тобі надав вчитель.</p>
 
       {% if form.non_field_errors %}
         <ul class="errorlist">
@@ -433,22 +394,88 @@
         </ul>
       {% endif %}
 
-      <div class="form-row">
-        {{ form.access_code }}
-        {% if form.access_code.errors %}
-          <ul class="errorlist">
-            {% for error in form.access_code.errors %}
-              <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-      </div>
+      {{ form.access_code }}
+
+      {% if form.access_code.errors %}
+        <ul class="errorlist">
+          {% for error in form.access_code.errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
 
       <div class="btn-row">
-        <button type="submit" class="btn">Додати вчителя</button>
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Оновити кабінет</a>
+        <button type="submit" class="small-btn">Додати вчителя</button>
       </div>
     </form>
-  </div>
-</div>
+  </section>
+
+  <section class="content-grid">
+    <div class="card">
+      <div class="section-head">
+        <h3>Розклад на сьогодні</h3>
+        <a href="{% url 'calendar' %}" class="section-link">Весь розклад →</a>
+      </div>
+
+      <div class="schedule-list">
+        {% for lesson in today_lessons %}
+          <a href="{% url 'lesson_detail' lesson.id %}" class="schedule-item">
+            <div class="schedule-left">
+              <div class="time">{{ lesson.start_time|time:"H:i" }}</div>
+              <div>
+                <div class="item-title">{{ lesson.title|default:"Урок" }}</div>
+                <div class="item-subtitle">
+                  {{ lesson.teacher.first_name }} {{ lesson.teacher.last_name }}
+                </div>
+              </div>
+            </div>
+
+            {% if lesson.start_time < now %}
+              <span class="pill pill-done">Завершено</span>
+            {% else %}
+              <span class="pill pill-planned">Заплановано</span>
+            {% endif %}
+          </a>
+        {% empty %}
+          <p class="empty-text">Сьогодні немає уроків</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-head">
+        <h3>Домашні завдання</h3>
+        <a href="#" class="section-link">Всі →</a>
+      </div>
+
+      <div class="task-list">
+        {% for task in homework_tasks %}
+          <div class="task-item">
+            <div class="task-left">
+              <div>
+                <div class="item-title">{{ task.title }}</div>
+                <div class="item-subtitle">
+                  {% if task.due_date %}
+                    До {{ task.due_date|date:"d.m.Y" }}
+                  {% else %}
+                    Без дедлайну
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            {% if task.is_done %}
+              <span class="pill pill-done">Виконано</span>
+            {% else %}
+              <span class="pill pill-alert">Виконати</span>
+            {% endif %}
+          </div>
+        {% empty %}
+          <p class="empty-text">Домашніх завдань поки немає</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+</main>
 {% endblock %}

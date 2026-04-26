@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}Мій профіль • MathSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #f3f5f1;
+  }
+
+  .profile-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3px 12px 10px;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    color: #3f7d2b;
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: 400;
+  }
+
+  .back-link:hover {
+    text-decoration: underline;
+  }
+
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 0.95fr 1.45fr;
+    gap: 6px;
+    align-items: start;
+  }
+
+  .card {
+    background: #f8faf7;
+    border: 1px solid #a8ca88;
+    border-radius: 10px;
+    padding: 10px;
+  }
+
+  .student-summary {
+    text-align: center;
+  }
+
+  .student-fullname {
+    font-size: 20px;
+    font-weight: 700;
+    color: #165847;
+    margin-bottom: 6px;
+  }
+
+  .student-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #e6f4ec;
+    color: #2f6f58;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #165847;
+    margin: 12px;
+  }
+
+  .top-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .action-group {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .btn,
+  .btn-outline {
+    display: inline-block;
+    padding: 12px 22px;
+    border-radius: 14px;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 700;
+    border: 1px solid #23a272;
+    cursor: pointer;
+  }
+
+  .btn {
+    background: #23a272;
+    color: #fff;
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: #3f7d2b;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  .field-block.full {
+    grid-column: 1 / -1;
+  }
+
+  .field-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #4a7a2d;
+  }
+
+  .field-value,
+  .field-input {
+    width: 100%;
+    min-height: 34px;
+    background: #ffffff;
+    color: #204637;
+    border: 1px solid #cbd5c0;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
+  .stats-card {
+    margin-top: 18px;
+  }
+
+  .stats-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #4a7a2d;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    padding: 6px 0;
+    border-top: 1px solid #d7e5c9;
+    color: #5f7b67;
+    font-size: 14px;
+  }
+
+  .stat-row:first-of-type {
+    border-top: none;
+  }
+
+  .stat-row strong {
+    color: #165847;
+    font-size: 16px;
+  }
+
+  .logout-wrap {
+    margin-top: 20px;
+  }
+
+  .logout-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #e2b4b4;
+    background: #fff5f5;
+    color: #c94a4a;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .form-actions {
+    margin-top: 18px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 1100px) {
+    .profile-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .profile-page {
+      height: auto;
+      overflow: visible;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+  <a href="{% url 'student_dashboard' %}" class="back-link">
+    ← Назад
+  </a>
+
+  <div class="profile-grid">
+    <div>
+      <div class="card student-summary">
+        <div class="student-fullname">
+          {{ request.user.first_name }} {{ request.user.last_name }}
+        </div>
+
+        <div class="student-badge">
+          Учень
+        </div>
+      </div>
+
+      <div class="card stats-card">
+        <div class="stats-title">Статистика</div>
+
+        <div class="stat-row">
+          <span>Вчителів</span>
+          <strong>{{ teachers_count }}</strong>
+        </div>
+
+        <div class="stat-row">
+          <span>Уроків сьогодні</span>
+          <strong>{{ today_lessons_count }}</strong>
+        </div>
+
+        <div class="stat-row">
+          <span>Усього уроків</span>
+          <strong>{{ lessons_count }}</strong>
+        </div>
+
+        <div class="stat-row">
+          <span>Виконано завдань</span>
+          <strong>{{ completed_tasks_count }}</strong>
+        </div>
+      </div>
+
+      <div class="logout-wrap">
+        <form method="post" action="{% url 'account_logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="logout-btn">
+            Вийти з акаунту
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="top-actions">
+          <h2 class="section-title">Особиста інформація</h2>
+
+          <div class="action-group">
+            {% if is_edit %}
+              <a href="{% url 'student_profile' %}" class="btn-outline">Скасувати</a>
+            {% else %}
+              <a href="{% url 'student_profile' %}?edit=1" class="btn">Редагувати</a>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if is_edit %}
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="info-grid">
+              <div class="field-block">
+                <label class="field-label">Ім’я</label>
+                <input type="text" name="first_name" value="{{ request.user.first_name }}" class="field-input">
+              </div>
+
+              <div class="field-block">
+                <label class="field-label">Прізвище</label>
+                <input type="text" name="last_name" value="{{ request.user.last_name }}" class="field-input">
+              </div>
+
+              <div class="field-block full">
+                <label class="field-label">Email</label>
+                <input type="email" name="email" value="{{ request.user.email }}" class="field-input">
+              </div>
+
+              <div class="field-block full">
+                <label class="field-label">Телефон</label>
+                <input type="text" name="phone" value="{{ student_profile.phone|default:'' }}" class="field-input">
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn">Зберегти</button>
+              <a href="{% url 'student_profile' %}" class="btn-outline">Скасувати</a>
+            </div>
+          </form>
+        {% else %}
+          <div class="info-grid">
+            <div class="field-block">
+              <label class="field-label">Ім’я</label>
+              <div class="field-value">{{ request.user.first_name }}</div>
+            </div>
+
+            <div class="field-block">
+              <label class="field-label">Прізвище</label>
+              <div class="field-value">{{ request.user.last_name }}</div>
+            </div>
+
+            <div class="field-block full">
+              <label class="field-label">Email</label>
+              <div class="field-value">{{ request.user.email }}</div>
+            </div>
+
+            <div class="field-block full">
+              <label class="field-label">Телефон</label>
+              <div class="field-value">
+                {% if student_profile.phone %}
+                  {{ student_profile.phone }}
+                {% else %}
+                  Не вказано
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

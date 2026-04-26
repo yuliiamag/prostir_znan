@@ -110,6 +110,7 @@
     gap: 18px;
   }
 
+
   .content-grid {
     display: grid;
     grid-template-columns: 1.35fr 0.85fr;
@@ -232,6 +233,33 @@
     font-weight: 700;
     color: #346457;
   }
+  .code-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.small-btn {
+  border: 1px solid #b7d38d;
+  background: #fff;
+  color: #205244;
+  text-decoration: none;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.small-btn:hover {
+  background: #f8fbf5;
+}
+
+.invite-code {
+  color: #0e5b4a;
+  letter-spacing: 1px;
+}
 
   .item-title {
     font-size: 18px;
@@ -300,6 +328,30 @@
     font-size: 15px;
     color: #7b8b84;
   }
+  .student-email-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.student-email-input {
+  flex: 1;
+  border: 1px solid #c7d8b8;
+  border-radius: 12px;
+  padding: 9px 11px;
+  font-size: 13px;
+  outline: none;
+}
+
+.student-email-input:focus {
+  border-color: #7fac57;
+}
+
+@media (max-width: 640px) {
+  .student-email-form {
+    flex-direction: column;
+  }
+}
 
   @media (max-width: 1200px) {
     .stats-grid {
@@ -371,8 +423,6 @@
   <main class="teacher-main">
     <div class="topbar">
       <div class="greeting">
-        <h1>Вітаю, {{ request.user.first_name|default:"вчителю" }}</h1>
-        <p>{{ current_date }}</p>
       </div>
 
       <div class="topbar-actions">
@@ -382,29 +432,61 @@
     </div>
 
     <section class="next-lesson">
-      <div>
-        <div class="next-lesson-title">
-          Наступний урок через 45 хв — Аліна Мороз
-        </div>
-        <div class="next-lesson-subtitle">
-          {{ teacher_subject|default:"Математика" }} · Тема: Квадратні рівняння · 12:00–13:00
-        </div>
+  {% if next_lesson %}
+    <div>
+      <div class="next-lesson-title">
+        Найближчий урок:
+        {{ next_lesson.start_time|date:"d.m.Y" }}
+        о {{ next_lesson.start_time|time:"H:i" }}
+        — {{ next_lesson.student.first_name }} {{ next_lesson.student.last_name }}
       </div>
 
-      <a href="#" class="lesson-btn">Почати урок</a>
-    </section>
+      <div class="next-lesson-subtitle">
+        {{ teacher_profile.subject|default:"Математика" }}
+        · Тема: {{ next_lesson.title|default:"Без теми" }}
+        {% if next_lesson.end_time %}
+          · {{ next_lesson.start_time|time:"H:i" }}–{{ next_lesson.end_time|time:"H:i" }}
+        {% endif %}
+      </div>
+    </div>
+
+    {% if next_lesson.meeting_link %}
+      <a href="{{ next_lesson.meeting_link }}" class="lesson-btn" target="_blank">
+        Почати урок
+      </a>
+    {% else %}
+      <a href="{% url 'lesson_detail' next_lesson.id %}" class="lesson-btn">
+        Переглянути
+      </a>
+    {% endif %}
+  {% else %}
+    <div>
+      <div class="next-lesson-title">
+        Уроків поки не заплановано
+      </div>
+      <div class="next-lesson-subtitle">
+        Створи новий урок, і він з’явиться тут
+      </div>
+    </div>
+
+    <a href="{% url 'create_lesson' %}" class="lesson-btn">
+      + Новий урок
+    </a>
+  {% endif %}
+</section>
 
     <section class="stats-grid">
       <div class="card stat-card">
-        <h3>Кількість учнів</h3>
-        <div class="stat-value">{{ students_count|default:"12" }}</div>
-        <div class="stat-note">Натисни — побачиш список</div>
-      </div>
-
+  <h3>Кількість учнів</h3>
+  <div class="stat-value">{{ student_links.count }}</div>
+  <div class="stat-note">Натисни — побачиш список</div>
+</div>
       <div class="card stat-card">
         <h3>Уроків сьогодні</h3>
-        <div class="stat-value">{{ lessons_today_count|default:"4" }}</div>
-        <div class="stat-note">2 вже завершено</div>
+        <div class="stat-value">{{ today_lessons.count }}</div>
+        <div class="stat-note">
+          {{ completed_lessons_count }} вже завершено
+        </div>
       </div>
 
       <div class="card stat-card">
@@ -415,68 +497,94 @@
     </section>
 
     <section class="quick-grid">
-      <div class="card quick-card">
-        <h3>Додати учня за поштою</h3>
-        <p>Введи email — учень отримає запрошення</p>
-      </div>
+<div class="card quick-card">
+  <h3>Додати учня</h3>
+  <p>Введи email учня, який уже зареєстрований у системі</p>
+
+  <form method="post" action="{% url 'add_student_manual' %}" class="student-email-form">
+    {% csrf_token %}
+
+    <input
+      type="email"
+      name="email"
+      required
+      placeholder="Email учня"
+      class="student-email-input"
+    >
+
+    <button type="submit" class="small-btn">
+      Додати
+    </button>
+  </form>
+</div>
 
       <div class="card quick-card">
-        <h3>Створити код запрошення</h3>
-        <p>Учень вводить код і приєднується</p>
-      </div>
+  <h3>Код запрошення</h3>
+
+  <p>
+    {% if teacher_profile.access_code %}
+      Поточний код:
+      <strong class="invite-code" id="inviteCode">
+      {{ teacher_profile.access_code|default:"Код ще не створено" }}
+    </strong>
+    {% endif %}
+  </p>
+
+  <div class="code-actions">
+    {% if teacher_profile.access_code %}
+      <button type="button" class="small-btn" onclick="copyInviteCode()">
+        Скопіювати
+      </button>
+    {% endif %}
+
+    <button type="button" class="small-btn" onclick="generateInviteCode()">
+      {% if teacher_profile.access_code %}
+        Оновити код
+      {% else %}
+        Створити код
+      {% endif %}
+  </button>
+    </a>
+  </div>
+</div>
     </section>
 
     <section class="content-grid">
       <div class="card">
         <div class="section-head">
           <h3>Розклад на сьогодні</h3>
-          <a href="#" class="section-link">Весь розклад →</a>
+          <a href="{% url 'calendar' %}" class="section-link">
+            Весь розклад →
+          </a>
         </div>
 
         <div class="schedule-list">
-          <div class="schedule-item">
-            <div class="schedule-left">
-              <div class="time">10:00</div>
-              <div>
-                <div class="item-title">Іван Коваль</div>
-                <div class="item-subtitle">Алгебра — Рівняння</div>
+          {% for lesson in today_lessons %}
+            <a href="{% url 'lesson_detail' lesson.id %}" class="schedule-item">
+              <div class="schedule-left">
+                <div class="time">
+                  {{ lesson.start_time|time:"H:i" }}
+                </div>
+                <div>
+                  <div class="item-title">
+                    {{ lesson.student.first_name }} {{ lesson.student.last_name }}
+                  </div>
+                  <div class="item-subtitle">
+                    {{ lesson.title|default:"Урок" }}
+                  </div>
+                </div>
               </div>
-            </div>
-            <span class="pill pill-done">Завершено</span>
-          </div>
 
-          <div class="schedule-item">
-            <div class="schedule-left">
-              <div class="time">12:00</div>
-              <div>
-                <div class="item-title">Аліна Мороз</div>
-                <div class="item-subtitle">Квадратні рівняння</div>
-              </div>
+              {% if lesson.start_time < now %}
+                <span class="pill pill-done">Завершено</span>
+              {% else %}
+                <span class="pill pill-planned">Заплановано</span>
+              {% endif %}
             </div>
-            <span class="pill pill-soon">Скоро</span>
-          </div>
-
-          <div class="schedule-item">
-            <div class="schedule-left">
-              <div class="time">14:30</div>
-              <div>
-                <div class="item-title">Дмитро Лисенко</div>
-                <div class="item-subtitle">Функції та графіки</div>
-              </div>
-            </div>
-            <span class="pill pill-planned">Заплановано</span>
-          </div>
-
-          <div class="schedule-item">
-            <div class="schedule-left">
-              <div class="time">16:00</div>
-              <div>
-                <div class="item-title">Софія Бондар</div>
-                <div class="item-subtitle">Геометрія — Трикутники</div>
-              </div>
-            </div>
-            <span class="pill pill-planned">Заплановано</span>
-          </div>
+          {% empty %}
+            <p class="empty-text">Сьогодні немає уроків</p>
+        </a>
+          {% endfor %}
         </div>
       </div>
 
@@ -519,31 +627,28 @@
         </div>
       </div>
     </section>
-
-    <section class="bottom-card attention-card">
-      <div class="section-head">
-        <h3>Учні потребують уваги</h3>
-        <a href="#" class="section-link">Детальніше →</a>
-      </div>
-
-      <div class="attention-list">
-        <div class="attention-item">
-          <div>
-            <div class="attention-name">Дмитро Лисенко</div>
-            <div class="attention-meta">3 завдання не здано</div>
-          </div>
-          <span class="pill pill-soft">Потрібна увага</span>
-        </div>
-
-        <div class="attention-item">
-          <div>
-            <div class="attention-name">Марія Коваленко</div>
-            <div class="attention-meta">Не була на 2 уроках</div>
-          </div>
-          <span class="pill pill-soft">Ризик пропусків</span>
-        </div>
-      </div>
-    </section>
   </main>
 </div>
+<script>
+  function generateInviteCode() {
+    fetch("{% url 'generate_teacher_code' %}", {
+      method: "GET",
+      headers: {
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById("inviteCode").innerText = data.code;
+    });
+  }
+
+  function copyInviteCode() {
+    const code = document.getElementById("inviteCode").innerText;
+
+    if (code !== "Код ще не створено") {
+      navigator.clipboard.writeText(code);
+    }
+  }
+</script>
 {% endblock %}
