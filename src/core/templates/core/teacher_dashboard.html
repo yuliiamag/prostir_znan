@@ -428,6 +428,7 @@
       <div class="topbar-actions">
         <a href="{% url 'teacher_profile' %}" class="action-btn">Мій профіль</a>
         <a href="{% url 'create_lesson' %}" class="action-btn">+ Новий урок</a>
+        <a href="{% url 'create_homework' %}" class="action-btn">+ Домашнє</a>
       </div>
     </div>
 
@@ -491,8 +492,8 @@
 
       <div class="card stat-card">
         <h3>Здано завдань</h3>
-        <div class="stat-value">{{ submitted_tasks_count|default:"8" }}/{{ total_tasks_count|default:"10" }}</div>
-        <div class="stat-note" style="color:#d34d4d;">2 не здали вчасно</div>
+        <div class="stat-value">{{ submitted_tasks_count|default:"1" }}/{{ total_tasks_count|default:"10" }}</div>
+        <div class="stat-note" style="color:#d34d4d;"></div>
       </div>
     </section>
 
@@ -594,37 +595,8 @@
           <a href="#" class="section-link">Всі →</a>
         </div>
 
-        <div class="task-list">
-          <div class="task-item">
-            <div class="task-left">
-              <div>
-                <div class="item-title">Задачі на похідні — варіант 3</div>
-                <div class="item-subtitle">Іван Коваль · здано 14 квіт.</div>
-              </div>
-            </div>
-            <span class="pill pill-alert">Перевірити</span>
-          </div>
 
-          <div class="task-item">
-            <div class="task-left">
-              <div>
-                <div class="item-title">Теорема Піфагора — самостійна</div>
-                <div class="item-subtitle">Аліна Мороз · здано 13 квіт.</div>
-              </div>
-            </div>
-            <span class="pill pill-alert">Перевірити</span>
-          </div>
 
-          <div class="task-item">
-            <div class="task-left">
-              <div>
-                <div class="item-title">Графіки функцій — практична</div>
-                <div class="item-subtitle">Дмитро Лисенко · здано 12 квіт.</div>
-              </div>
-            </div>
-            <span class="pill pill-alert">Перевірити</span>
-          </div>
-        </div>
       </div>
     </section>
   </main>

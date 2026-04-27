@@ -21,6 +21,8 @@ urlpatterns = [
     path("lesson/<int:lesson_id>/", views.lesson_detail, name="lesson_detail"),
     path("lesson/<int:lesson_id>/edit/", views.create_lesson, name="edit_lesson"),
     path("student/profile/", views.student_profile, name="student_profile"),
+    path("homework/", views.homework, name="homework"),
+    path("homework/new/", views.create_homework, name="create_homework"),
 ]
 
 

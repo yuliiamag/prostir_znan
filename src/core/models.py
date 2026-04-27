@@ -2,8 +2,7 @@ from django.db import models
 import random
 import string
 from django.conf import settings
-from django.db import models
-
+from django.utils import timezone
 
 def generate_access_code(length=6):
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
@@ -107,3 +106,51 @@ class EventReminder(models.Model):
 
     def __str__(self):
         return f"{self.event.title} - {self.reminder_type}"
+
+class Homework(models.Model):
+    STATUS_CHOICES = [
+        ("assigned", "Призначено"),
+        ("submitted", "Здано"),
+        ("checked", "Перевірено"),
+        ("late", "Прострочено"),
+    ]
+
+    lesson = models.ForeignKey(
+        "CalendarEvent",
+        on_delete=models.CASCADE,
+        related_name="homeworks",
+        null=True,
+        blank=True
+    )
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="created_homeworks"
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="student_homeworks"
+    )
+
+    title = models.CharField(max_length=200, default="Домашнє завдання")
+    description = models.TextField()
+    deadline = models.DateTimeField(null=True, blank=True)
+
+    answer_text = models.TextField(blank=True)
+    answer_file = models.FileField(upload_to="homework_answers/", blank=True, null=True)
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="assigned"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.title} — {self.student}"
+
+
+

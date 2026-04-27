@@ -466,7 +466,7 @@
   <a href="{% url 'teacher_dashboard' %}" class="back-link">← Назад</a>
 
   <h1 class="page-title">Новий урок</h1>
-  <p class="page-subtitle">Заплануй урок — учень отримає сповіщення автоматично</p>
+  <p class="page-subtitle">Учень отримає сповіщення автоматично про новий урок</p>
 
   {% if messages %}
     <div class="messages-wrap">
@@ -611,24 +611,7 @@
       </div>
     </section>
 
-    <section class="section-card">
-      <div class="section-header">
-        <div class="step-circle">4</div>
-        <h2 class="section-title">Сповіщення учню</h2>
-      </div>
 
-      <div class="notify-row">
-        <input
-          type="checkbox"
-          name="notify_student"
-          id="notify_student"
-          {% if form_data.notify_student %}checked{% endif %}
-        >
-        <label for="notify_student" style="font-size:16px; color:#476b66;">
-          Надіслати сповіщення учню одразу після збереження уроку
-        </label>
-      </div>
-    </section>
     </section>
 
     <section class="section-card">
@@ -663,10 +646,6 @@
           <div class="summary-value" id="summary-repeat">Без повторення</div>
         </div>
 
-        <div class="summary-row">
-          <div class="summary-label">Сповіщення учню</div>
-          <div class="summary-value" id="summary-notify">Буде відправлено одразу</div>
-        </div>
       </div>
     </section>
 
