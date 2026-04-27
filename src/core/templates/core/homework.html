@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+
+{% block title %}Домашні завдання • MathSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+:root{
+  --g-dark:#0A3D2E;
+  --g-mid:#1A7A52;
+  --g-bright:#2DBF7E;
+  --g-light:#E8F5EF;
+  --g-pale:#F2FAF6;
+  --amber:#F59E0B;
+  --red:#EF4444;
+  --text:#0D2B1F;
+  --soft:#4A7A63;
+  --muted:#8EAF9F;
+  --border:#D6EDE3;
+  --white:#fff;
+  --radius:16px;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  background:var(--g-pale);
+  color:var(--text);
+}
+
+.page{
+  max-width:980px;
+  margin:0 auto;
+  padding:32px 24px 60px;
+}
+
+.back-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  font-weight:600;
+  color:var(--soft);
+  margin-bottom:24px;
+  text-decoration:none;
+}
+
+.back-btn:hover{
+  color:var(--g-mid);
+}
+
+.page-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  margin-bottom:22px;
+  gap:16px;
+}
+
+.page-title{
+  font-size:22px;
+  font-weight:800;
+  color:var(--text);
+}
+
+.page-sub{
+  font-size:13px;
+  color:var(--soft);
+  margin-top:4px;
+}
+
+.add-hw-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:9px 18px;
+  border-radius:12px;
+  background:var(--g-bright);
+  color:var(--g-dark);
+  border:none;
+  font-size:13px;
+  font-weight:800;
+  cursor:pointer;
+  text-decoration:none;
+  box-shadow:0 4px 14px rgba(45,191,126,.3);
+  transition:.15s;
+}
+
+.add-hw-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 18px rgba(45,191,126,.38);
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:20px;
+}
+
+.stat-card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:15px 16px;
+}
+
+.stat-label{
+  font-size:10px;
+  font-weight:800;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  margin-bottom:6px;
+}
+
+.stat-value{
+  font-size:25px;
+  font-weight:800;
+  color:var(--text);
+  line-height:1;
+}
+
+.stat-note{
+  font-size:11px;
+  color:var(--soft);
+  margin-top:6px;
+}
+
+.stat-note.warn{
+  color:var(--red);
+}
+
+.filter-bar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:18px;
+  flex-wrap:wrap;
+}
+
+.filter-label{
+  font-size:11px;
+  font-weight:700;
+  color:var(--muted);
+}
+
+.filter-pill{
+  padding:7px 14px;
+  border-radius:20px;
+  border:1px solid var(--border);
+  background:var(--white);
+  color:var(--soft);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  font-family:inherit;
+}
+
+.filter-pill.active{
+  background:var(--g-bright);
+  color:var(--g-dark);
+  border-color:transparent;
+  font-weight:800;
+}
+
+.hw-card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  margin-bottom:10px;
+  overflow:hidden;
+  transition:.15s;
+}
+
+.hw-card:hover{
+  border-color:var(--g-bright);
+  box-shadow:0 4px 20px rgba(45,191,126,.08);
+}
+
+.hw-card.assigned{
+  border-left:4px solid var(--amber);
+}
+
+.hw-card.submitted{
+  border-left:4px solid #7C3AED;
+}
+
+.hw-card.checked{
+  border-left:4px solid var(--g-bright);
+}
+
+.hw-card.late{
+  border-left:4px solid var(--red);
+}
+
+.hw-card-body{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:14px 18px;
+}
+
+.hw-icon{
+  width:42px;
+  height:42px;
+  border-radius:13px;
+  background:var(--g-light);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:19px;
+  flex-shrink:0;
+}
+
+.hw-info{
+  flex:1;
+  min-width:0;
+}
+
+.hw-title{
+  font-size:14px;
+  font-weight:800;
+  color:var(--text);
+  margin-bottom:4px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.hw-meta{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  flex-wrap:wrap;
+}
+
+.hw-person,
+.hw-deadline,
+.hw-date{
+  font-size:11px;
+  font-weight:600;
+  color:var(--soft);
+}
+
+.hw-dot{
+  width:3px;
+  height:3px;
+  border-radius:50%;
+  background:var(--muted);
+}
+
+.hw-right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-shrink:0;
+}
+
+.status-badge{
+  font-size:11px;
+  font-weight:800;
+  padding:5px 12px;
+  border-radius:20px;
+  white-space:nowrap;
+}
+
+.status-badge.assigned{
+  background:#FEF9C3;
+  color:#854D0E;
+}
+
+.status-badge.submitted{
+  background:#EDE9FE;
+  color:#5B21B6;
+}
+
+.status-badge.checked{
+  background:#DCFCE7;
+  color:#166534;
+}
+
+.status-badge.late{
+  background:#FEE2E2;
+  color:#991B1B;
+}
+
+.hw-description{
+  display:none;
+  border-top:1px solid var(--g-light);
+  background:var(--g-pale);
+  padding:14px 18px;
+  font-size:13px;
+  color:var(--soft);
+  line-height:1.55;
+}
+
+.hw-card.open .hw-description{
+  display:block;
+}
+
+.empty-text{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:22px;
+  font-size:14px;
+  color:var(--soft);
+}
+
+@media(max-width:800px){
+  .page{
+    padding:24px 16px 50px;
+  }
+
+  .page-head{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .stats{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .hw-card-body{
+    align-items:flex-start;
+  }
+
+  .hw-right{
+    align-self:flex-start;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if role == "student" %}
+<div class="page">
+  <a class="back-btn" href="{% url 'dashboard' %}">← Головна</a>
+
+  <div class="page-head">
+    <div>
+      <div class="page-title">Домашні завдання</div>
+      <div class="page-sub">Твої завдання від вчителів</div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Всього</div>
+      <div class="stat-value">{{ total_count }}</div>
+      <div class="stat-note">усі завдання</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Призначено</div>
+      <div class="stat-value">{{ assigned_count }}</div>
+      <div class="stat-note">потрібно здати</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Здано</div>
+      <div class="stat-value">{{ submitted_count }}</div>
+      <div class="stat-note">очікує перевірки</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Прострочено</div>
+      <div class="stat-value">{{ late_count }}</div>
+      <div class="stat-note warn">потребує уваги</div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <span class="filter-label">Статус:</span>
+    <button class="filter-pill active" onclick="filterHomeworks('all', this)">Всі</button>
+    <button class="filter-pill" onclick="filterHomeworks('assigned', this)">Задано</button>
+    <button class="filter-pill" onclick="filterHomeworks('submitted', this)">Здано</button>
+    <button class="filter-pill" onclick="filterHomeworks('checked', this)">Перевірено</button>
+    <button class="filter-pill" onclick="filterHomeworks('late', this)">Прострочено</button>
+  </div>
+
+  {% for hw in homeworks %}
+  <div class="hw-card {{ hw.status }}" data-status="{{ hw.status }}" onclick="toggleHomework(this)">
+    <div class="hw-card-body">
+      <div class="hw-icon">📘</div>
+
+      <div class="hw-info">
+        <div class="hw-title">{{ hw.title }}</div>
+
+        <div class="hw-meta">
+          <span class="hw-person">
+            {{ hw.teacher.first_name }} {{ hw.teacher.last_name }}
+          </span>
+
+          {% if hw.deadline %}
+            <span class="hw-dot"></span>
+            <span class="hw-deadline">
+              до {{ hw.deadline|date:"d.m.Y H:i" }}
+            </span>
+          {% endif %}
+
+          <span class="hw-dot"></span>
+          <span class="hw-date">
+            створено {{ hw.created_at|date:"d.m.Y" }}
+          </span>
+        </div>
+      </div>
+
+      <div class="hw-right">
+        <span class="status-badge {{ hw.status }}">
+          {{ hw.get_status_display }}
+        </span>
+      </div>
+    </div>
+
+    <div class="hw-description">
+      <strong>Опис завдання:</strong><br>
+      {{ hw.description|linebreaksbr }}
+
+      {% if hw.answer_text %}
+        <br><br>
+        <strong>Твоя відповідь:</strong><br>
+        {{ hw.answer_text|linebreaksbr }}
+      {% endif %}
+
+      {% if hw.answer_file %}
+        <br><br>
+        <strong>Файл:</strong>
+        <a href="{{ hw.answer_file.url }}" target="_blank">Переглянути файл</a>
+      {% endif %}
+    </div>
+  </div>
+  {% empty %}
+    <p class="empty-text">Немає домашніх завдань.</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+
+{% if role == "teacher" %}
+<div class="page">
+  <a class="back-btn" href="{% url 'dashboard' %}">← Головна</a>
+
+  <div class="page-head">
+    <div>
+      <div class="page-title">Домашні завдання</div>
+      <div class="page-sub">Завдання створені для учнів</div>
+    </div>
+
+    <a href="{% url 'create_homework' %}" class="add-hw-btn">
+      + Нове завдання
+    </a>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Всього</div>
+      <div class="stat-value">{{ total_count }}</div>
+      <div class="stat-note">усі завдання</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Призначено</div>
+      <div class="stat-value">{{ assigned_count }}</div>
+      <div class="stat-note">ще не здано</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Здано</div>
+      <div class="stat-value">{{ submitted_count }}</div>
+      <div class="stat-note">на перевірку</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Прострочено</div>
+      <div class="stat-value">{{ late_count }}</div>
+      <div class="stat-note warn">учні не здали</div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <span class="filter-label">Статус:</span>
+    <button class="filter-pill active" onclick="filterHomeworks('all', this)">Всі</button>
+    <button class="filter-pill" onclick="filterHomeworks('assigned', this)">Задано</button>
+    <button class="filter-pill" onclick="filterHomeworks('submitted', this)">Здано</button>
+    <button class="filter-pill" onclick="filterHomeworks('checked', this)">Перевірено</button>
+    <button class="filter-pill" onclick="filterHomeworks('late', this)">Прострочено</button>
+  </div>
+
+  {% for hw in homeworks %}
+  <div class="hw-card {{ hw.status }}" data-status="{{ hw.status }}" onclick="toggleHomework(this)">
+    <div class="hw-card-body">
+      <div class="hw-icon">📗</div>
+
+      <div class="hw-info">
+        <div class="hw-title">{{ hw.title }}</div>
+
+        <div class="hw-meta">
+          <span class="hw-person">
+            {{ hw.student.first_name }} {{ hw.student.last_name }}
+          </span>
+
+          {% if hw.deadline %}
+            <span class="hw-dot"></span>
+            <span class="hw-deadline">
+              до {{ hw.deadline|date:"d.m.Y H:i" }}
+            </span>
+          {% endif %}
+
+          <span class="hw-dot"></span>
+          <span class="hw-date">
+            створено {{ hw.created_at|date:"d.m.Y" }}
+          </span>
+        </div>
+      </div>
+
+      <div class="hw-right">
+        <span class="status-badge {{ hw.status }}">
+          {{ hw.get_status_display }}
+        </span>
+      </div>
+    </div>
+
+    <div class="hw-description">
+      <strong>Опис завдання:</strong><br>
+      {{ hw.description|linebreaksbr }}
+
+      {% if hw.answer_text %}
+        <br><br>
+        <strong>Відповідь учня:</strong><br>
+        {{ hw.answer_text|linebreaksbr }}
+      {% endif %}
+
+      {% if hw.answer_file %}
+        <br><br>
+        <strong>Файл учня:</strong>
+        <a href="{{ hw.answer_file.url }}" target="_blank">Переглянути файл</a>
+      {% endif %}
+    </div>
+  </div>
+  {% empty %}
+    <p class="empty-text">Ще немає створених завдань.</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterHomeworks(status, button){
+  document.querySelectorAll('.filter-pill').forEach(function(pill){
+    pill.classList.remove('active');
+  });
+
+  button.classList.add('active');
+
+  document.querySelectorAll('.hw-card').forEach(function(card){
+    const cardStatus = card.dataset.status;
+
+    if(status === 'all' || cardStatus === status){
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+function toggleHomework(card){
+  card.classList.toggle('open');
+}
+</script>
+{% endblock %}

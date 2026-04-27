@@ -2,14 +2,13 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import JoinTeacherByCodeForm, TeacherProfileEditForm
-from .models import TeacherProfile, StudentTeacherLink
+from .models import TeacherProfile, StudentTeacherLink, CalendarEvent, StudentProfile,Homework
 from datetime import timedelta
 from django.db.models import Q
 from django.utils import timezone
 import calendar
 from datetime import date, datetime, timedelta
 import locale
-from .models import CalendarEvent, StudentProfile
 import random
 import string
 from django.contrib.auth import get_user_model
@@ -439,12 +438,16 @@ def create_lesson(request, lesson_id=None):
         if form_data["duration"] == "custom" and not form_data["custom_duration"]:
             errors.append("Вкажіть власну тривалість уроку.")
 
-        selected_student = student_profiles.filter(
-            id=form_data["student_id"]
-        ).first()
+        selected_student = None
 
-        if not selected_student and form_data["student_id"]:
-            errors.append("Обраного учня не знайдено.")
+        if form_data["student_id"]:
+            selected_student = student_profiles.filter(
+                id=form_data["student_id"]
+            ).first()
+
+            if not selected_student:
+                errors.append("Обраного учня не знайдено.")
+
 
         if errors:
             for error in errors:
@@ -475,7 +478,7 @@ def create_lesson(request, lesson_id=None):
                     lesson.student = selected_student.user
                     lesson.save()
 
-                    messages.success(request, "Урок успішно оновлено.")
+                    # messages.success(request, "Урок успішно оновлено.")
                     return redirect("lesson_detail", lesson_id=lesson.id)
 
                 else:
@@ -489,7 +492,7 @@ def create_lesson(request, lesson_id=None):
                         student=selected_student.user,
                     )
 
-                    messages.success(request, "Урок успішно створено.")
+                    # messages.success(request, "Урок успішно створено.")
                     return redirect("lesson_detail", lesson_id=lesson.id)
 
             except ValueError:
@@ -592,7 +595,7 @@ User = get_user_model()
 @login_required
 def add_student_manual(request):
     if not hasattr(request.user, "teacher_profile"):
-        messages.error(request, "Ця дія доступна тільки для вчителя.")
+        # messages.error(request, "Ця дія доступна тільки для вчителя.")
         return redirect("dashboard")
 
     if request.method == "POST":
@@ -626,4 +629,86 @@ def lesson_detail(request, lesson_id):
         "lesson": lesson,
         "is_teacher": is_teacher,
         "is_student": is_student,
+    })
+
+
+@login_required
+def homework(request):
+    if TeacherProfile.objects.filter(user=request.user).exists():
+        role = "teacher"
+        homeworks = Homework.objects.filter(
+            teacher=request.user
+        ).select_related("student").order_by("-created_at")
+    else:
+        role = "student"
+        homeworks = Homework.objects.filter(
+            student=request.user
+        ).select_related("teacher").order_by("-created_at")
+
+    return render(request, "core/homework.html", {
+        "role": role,
+        "homeworks": homeworks,
+        "total_count": homeworks.count(),
+        "assigned_count": homeworks.filter(status="assigned").count(),
+        "submitted_count": homeworks.filter(status="submitted").count(),
+        "checked_count": homeworks.filter(status="checked").count(),
+        "late_count": homeworks.filter(status="late").count(),
+    })
+
+@login_required
+def create_homework(request):
+    teacher_profile = TeacherProfile.objects.filter(user=request.user).first()
+
+    if not teacher_profile:
+        #messages.error(request, "Створювати домашні завдання може тільки вчитель.")
+        return redirect("dashboard")
+
+    student_links = StudentTeacherLink.objects.filter(
+        teacher=teacher_profile
+    ).select_related("student__user")
+
+    students = [link.student for link in student_links]
+
+    if request.method == "POST":
+        student_id = request.POST.get("student")
+        title = request.POST.get("title", "").strip()
+        description = request.POST.get("description", "").strip()
+        deadline_date = request.POST.get("deadline_date")
+        deadline_time = request.POST.get("deadline_time") or "23:59"
+
+        if not student_id or not title or not description:
+            #messages.error(request, "Заповни учня, назву та опис завдання.")
+            return redirect("create_homework")
+
+        student_profile = StudentProfile.objects.filter(
+            id=student_id,
+            teacher_links__teacher=teacher_profile
+        ).select_related("user").first()
+
+        if not student_profile:
+            #messages.error(request, "Цей учень не прив'язаний до твого профілю.")
+            return redirect("create_homework")
+
+        deadline = None
+        if deadline_date:
+            deadline_naive = datetime.strptime(
+                f"{deadline_date} {deadline_time}",
+                "%Y-%m-%d %H:%M"
+            )
+            deadline = timezone.make_aware(deadline_naive)
+
+        Homework.objects.create(
+            teacher=request.user,
+            student=student_profile.user,
+            title=title,
+            description=description,
+            deadline=deadline,
+            status="assigned",
+        )
+
+        #messages.success(request, "Домашнє завдання створено.")
+        return redirect("homework")
+
+    return render(request, "core/create_homework.html", {
+        "students": students,
     })

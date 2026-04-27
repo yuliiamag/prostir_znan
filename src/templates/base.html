@@ -100,6 +100,10 @@
       cursor: pointer;
       border-top: 1px solid rgba(255,255,255,0.08);
     }
+    .menu a span {
+  display: block;
+  line-height: 1.2;
+}
 
     .menu a:hover,
     .menu form button:hover,
@@ -305,10 +309,10 @@
     {% endif %}
   </a>
 
-  <a href="#">
-    <span class="menu-icon"></span>
-    <span>Домашні завдання</span>
-  </a>
+
+         <a href="{% url 'homework' %}">
+          <span>Домашні завдання</span>
+        </a>
 
   {% if user.is_authenticated %}
     {% if user.teacher_profile %}
@@ -376,5 +380,6 @@
       {% block content %}{% endblock %}
     </main>
   </div>
+{% block extra_js %}{% endblock %}
 </body>
 </html>

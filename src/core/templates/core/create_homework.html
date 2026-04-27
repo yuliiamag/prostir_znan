@@ -1,0 +1,774 @@
+{% extends "base.html" %}
+
+{% block title %}Нове ДЗ • MathSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+:root{
+  --g-dark:#0A3D2E;
+  --g-mid:#1A7A52;
+  --g-bright:#2DBF7E;
+  --g-light:#E8F5EF;
+  --g-pale:#F2FAF6;
+  --amber:#F59E0B;
+  --red:#EF4444;
+  --text:#0D2B1F;
+  --soft:#4A7A63;
+  --muted:#8EAF9F;
+  --border:#D6EDE3;
+  --white:#fff;
+  --radius:16px;
+  --radius-sm:10px;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  background:var(--g-pale);
+  color:var(--text);
+}
+
+.card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:22px;
+  margin-bottom:16px;
+}
+
+.card-title{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:18px;
+}
+
+.card-num{
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  background:var(--g-dark);
+  color:var(--g-bright);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  font-weight:800;
+}
+
+.card-title h3{
+  margin:0;
+  font-size:15px;
+  color:var(--text);
+}
+
+.required-note{
+  margin-left:auto;
+  font-size:11px;
+  color:var(--muted);
+}
+
+.field{
+  margin-bottom:16px;
+}
+
+.field:last-child{
+  margin-bottom:0;
+}
+
+.label{
+  display:block;
+  font-size:12px;
+  font-weight:800;
+  color:var(--soft);
+  margin-bottom:6px;
+}
+
+.req{
+  color:var(--red);
+}
+
+.input{
+  width:100%;
+  padding:11px 14px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  font-size:13px;
+  color:var(--text);
+  font-family:inherit;
+  background:var(--white);
+}
+
+.input:focus{
+  outline:none;
+  border-color:var(--g-bright);
+  box-shadow:0 0 0 3px rgba(45,191,126,.12);
+}
+
+.textarea{
+  height:110px;
+  resize:vertical;
+}
+
+.two{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+.search-input{
+  width:100%;
+  padding:10px 13px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  margin-bottom:10px;
+  font-size:13px;
+  font-family:inherit;
+}
+
+.student-list{
+  display:none;
+  flex-direction:column;
+  gap:8px;
+  max-height:180px;
+  overflow-y:auto;
+  padding-right:4px;
+}
+.student-select-wrap{
+  position:relative;
+}
+
+.student-select-wrap:hover .student-list,
+.student-list.show{
+  display:flex;
+}
+
+.student-empty{
+  display:none;
+  font-size:13px;
+  color:var(--muted);
+  padding:10px;
+}
+.student-opt{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 14px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--white);
+  cursor:pointer;
+  transition:.15s;
+}
+
+.student-opt:hover{
+  border-color:var(--g-bright);
+  background:var(--g-pale);
+}
+
+.student-opt.selected{
+  border-color:var(--g-bright);
+  background:var(--g-light);
+}
+
+
+
+.so-av{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  background:#DCFCE7;
+  color:#166534;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  font-weight:800;
+  flex-shrink:0;
+}
+
+.so-name{
+  font-size:13px;
+  font-weight:800;
+  color:var(--text);
+}
+
+.so-email{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:2px;
+}
+
+.so-radio{
+  margin-left:auto;
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  border:2px solid var(--border);
+}
+
+.student-opt.selected .so-radio{
+  background:var(--g-bright);
+  border-color:var(--g-bright);
+  box-shadow:inset 0 0 0 4px var(--g-light);
+}
+
+.deadline-pills{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+
+.dl-pill{
+  padding:7px 14px;
+  border-radius:20px;
+  border:1px solid var(--border);
+  background:var(--white);
+  color:var(--soft);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  font-family:inherit;
+}
+
+.dl-pill:hover,
+.dl-pill.active{
+  border-color:var(--g-bright);
+  background:var(--g-light);
+  color:var(--g-dark);
+}
+
+.preview-card{
+  background:#eef4e3;
+  border-radius:24px;
+  padding:24px 28px;
+}
+
+.preview-title{
+  display:none;
+}
+
+.preview-row{
+  display:grid;
+  grid-template-columns:120px 1fr;
+  gap:18px;
+  padding:16px 0;
+  border-bottom:1px solid #d3e2bf;
+}
+
+.preview-row:last-child{
+  border-bottom:none;
+}
+
+.preview-label{
+  color:#52691f;
+  font-size:16px;
+  font-weight:600;
+}
+
+
+.preview-value{
+  color:#045055;
+  font-size:17px;
+  font-weight:700;
+  text-align:right;
+}
+
+.preview-empty{
+  color:#045055;
+  font-style:normal;
+}
+
+.preview-ico{
+  display:none;
+}
+
+.submit-btn{
+  width:100%;
+  padding:13px;
+  border-radius:12px;
+  border:none;
+  background:var(--g-bright);
+  color:var(--g-dark);
+  font-size:14px;
+  font-weight:900;
+  cursor:pointer;
+  font-family:inherit;
+  margin-top:16px;
+  box-shadow:0 4px 16px rgba(45,191,126,.28);
+}
+
+.submit-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 20px rgba(45,191,126,.4);
+}
+
+.tips-card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px;
+  margin-top:14px;
+}
+
+.tips-title{
+  font-size:12px;
+  font-weight:900;
+  color:var(--text);
+  margin-bottom:10px;
+}
+
+.tip{
+  font-size:12px;
+  color:var(--soft);
+  line-height:1.5;
+  margin-bottom:7px;
+}
+
+.preview-wrapper{
+  background:#fff;
+  border:1.5px solid #b9d68f;
+  border-radius:20px;
+  padding:16px;
+}
+.error-text{
+  font-size:12px;
+  color:var(--red);
+  margin-top:6px;
+  display:none;
+}
+
+.input.error{
+  border-color:var(--red);
+}
+
+@media(max-width:900px){
+  .hw-layout{
+    grid-template-columns:1fr;
+  }
+
+  .steps{
+    display:none;
+  }
+
+  .preview-card{
+    position:static;
+  }
+}
+.upload-box{
+  display:block;
+  border:2px dashed #b9d68f;
+  border-radius:18px;
+  background:#f8fbf3;
+  padding:24px;
+  text-align:center;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.upload-box:hover{
+  background:#edf4e4;
+  border-color:#18a06c;
+}
+
+.upload-box input{
+  display:none;
+}
+.toggle-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  padding:14px 0;
+  border-bottom:1px solid #d3e2bf;
+  cursor:pointer;
+}
+
+.toggle-row:last-child{
+  border-bottom:none;
+}
+
+.toggle-name{
+  font-size:15px;
+  font-weight:800;
+  color:#045055;
+}
+
+.toggle-desc{
+  font-size:13px;
+  color:#7b927c;
+  margin-top:3px;
+}
+
+.toggle-row input{
+  display:none;
+}
+
+.toggle{
+  width:54px;
+  height:30px;
+  border-radius:999px;
+  background:#cbd5c2;
+  position:relative;
+  flex-shrink:0;
+  transition:.2s;
+}
+
+.toggle::after{
+  content:"";
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  background:white;
+  position:absolute;
+  top:3px;
+  left:3px;
+  transition:.2s;
+}
+
+.toggle-row input:checked + .toggle{
+  background:#2fc77f;
+}
+
+.toggle-row input:checked + .toggle::after{
+  left:27px;
+}
+.upload-icon{
+  font-size:26px;
+  margin-bottom:6px;
+}
+
+.upload-title{
+  font-size:14px;
+  font-weight:800;
+  color:#045055;
+}
+
+.upload-subtitle{
+  font-size:12px;
+  color:#667c63;
+  margin-top:4px;
+}
+@media(max-width:650px){
+  .two{
+    grid-template-columns:1fr;
+  }
+
+  .hw-topbar{
+    margin:-16px -16px 22px;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="hw-topbar">
+  <a class="hw-back" href="{% url 'homework' %}">← Домашні завдання</a>
+  <div style="width:1px;height:18px;background:rgba(255,255,255,.12);"></div>
+  <div class="hw-top-title">Нове завдання</div>
+</div>
+
+<form method="post" id="homework-form" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  <div class="hw-layout">
+
+
+     <div class="card">
+  <div class="card-title">
+    <div class="card-num">1</div>
+    <h3>Оберіть учня</h3>
+    <span class="required-note">Обов'язково *</span>
+  </div>
+
+  <div class="student-select-wrap">
+    <input
+      class="search-input"
+      type="text"
+      id="student-search"
+      placeholder="Наведіть або почніть писати ім'я чи email..."
+      autocomplete="off"
+    >
+
+    <input type="hidden" name="student" id="selected-student" required>
+
+    <div class="student-list" id="student-list">
+      {% for student in students %}
+      <div
+        class="student-opt"
+        data-id="{{ student.id }}"
+        data-name="{{ student.user.first_name }} {{ student.user.last_name }}"
+        data-email="{{ student.user.email }}"
+        data-search="{{ student.user.first_name }} {{ student.user.last_name }} {{ student.user.email }}"
+      >
+        <div class="so-av">
+          {{ student.user.first_name|first|default:"У" }}{{ student.user.last_name|first|default:"" }}
+        </div>
+
+        <div>
+          <div class="so-name">
+            {{ student.user.first_name }} {{ student.user.last_name }}
+          </div>
+          <div class="so-email">
+            {{ student.user.email }}
+          </div>
+        </div>
+
+        <div class="so-radio"></div>
+      </div>
+      {% empty %}
+      <div style="font-size:13px;color:var(--soft);line-height:1.5;">
+        Ще немає прив'язаних учнів
+      </div>
+      {% endfor %}
+
+      <div id="student-empty" class="student-empty">
+        Учня не знайдено
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="card">
+        <div class="card-title">
+          <div class="card-num">2</div>
+          <h3>Назва та опис завдання</h3>
+        </div>
+
+        <div class="field">
+          <label class="label">Назва завдання <span class="req">*</span></label>
+          <input
+            class="input"
+            id="hw-title"
+            type="text"
+            name="title"
+            placeholder="Наприклад: Квадратні рівняння — варіант 2"
+            required
+          >
+          <div class="error-text" id="title-error">Вкажи назву завдання</div>
+        </div>
+
+        <div class="field">
+          <label class="label">Що потрібно зробити <span class="req">*</span></label>
+          <textarea
+            class="input textarea"
+            id="hw-desc"
+            name="description"
+            placeholder="Наприклад: Розв'язати задачі 1–8 зі сторінки 45. Показати всі кроки розв'язання..."
+            required
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <div class="card-num">3</div>
+          <h3>Час здачі</h3>
+        </div>
+
+        <div class="two">
+          <div class="field">
+            <label class="label">Дата здачі</label>
+            <input class="input" id="hw-deadline-date" type="date" name="deadline_date">
+          </div>
+
+          <div class="field">
+            <label class="label">Час здачі</label>
+            <input class="input" id="hw-deadline-time" type="time" name="deadline_time" value="23:59">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+  <div class="card-title">
+    <div class="card-num">4</div>
+    <h3>Матеріали до завдання</h3>
+    <span class="required-note">Необов'язково</span>
+  </div>
+
+  <div class="field">
+    <label class="label">Файли, фото або документи</label>
+
+    <label class="upload-box">
+      <input type="file" name="materials" multiple>
+      <div class="upload-title">Додати файли</div>
+      <div class="upload-subtitle">PDF, Word, фото або інші матеріали</div>
+    </label>
+  </div>
+</div>
+<div class="card">
+  <div class="card-title">
+    <div class="card-num">5</div>
+    <h3>Налаштування здачі</h3>
+  </div>
+
+  <label class="toggle-row">
+    <div>
+      <div class="toggle-name">Дозволити здати після дедлайну</div>
+      <div class="toggle-desc">Учень зможе здати із запізненням</div>
+    </div>
+    <input type="checkbox" name="allow_late" checked>
+    <span class="toggle"></span>
+  </label>
+
+  <label class="toggle-row">
+    <div>
+      <div class="toggle-name">Дозволити пізню здачу</div>
+      <div class="toggle-desc">Учень зможе надіслати роботу після дедлайну</div>
+    </div>
+    <input type="checkbox" name="allow_late">
+    <span class="toggle"></span>
+  </label>
+
+  <label class="toggle-row">
+    <div>
+      <div class="toggle-name">Потрібен файл-відповідь</div>
+      <div class="toggle-desc">Учень має прикріпити фото, PDF або документ</div>
+    </div>
+    <input type="checkbox" name="require_file">
+    <span class="toggle"></span>
+  </label>
+  <div class="field" style="margin-top:16px;">
+  <label class="label">Коментар до здачі</label>
+  <textarea
+    class="input textarea"
+    name="submission_note"
+    placeholder="Наприклад: відповідь можна здати фото зошита або PDF-файлом"
+    style="height:80px;"
+  ></textarea>
+</div>
+    <aside>
+  <div class="preview-wrapper">
+
+    <div class="preview-card">
+      <div class="preview-row">
+        <div class="preview-label">Учень</div>
+        <div class="preview-value" id="prev-student">—</div>
+      </div>
+
+      <div class="preview-row">
+        <div class="preview-label">Назва</div>
+        <div class="preview-value" id="prev-title">—</div>
+      </div>
+
+      <div class="preview-row">
+        <div class="preview-label">Опис</div>
+        <div class="preview-value" id="prev-desc">—</div>
+      </div>
+
+      <div class="preview-row">
+        <div class="preview-label">Дата і час</div>
+        <div class="preview-value" id="prev-deadline">—</div>
+      </div>
+    </div>
+
+    <button type="submit" class="submit-btn">
+      Створити завдання ✓
+    </button>
+
+  </div>
+</aside>
+
+  </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+
+  const titleInput = document.getElementById('hw-title');
+  const descInput = document.getElementById('hw-desc');
+  const dateInput = document.getElementById('hw-deadline-date');
+  const timeInput = document.getElementById('hw-deadline-time');
+
+  const studentSearch = document.getElementById('student-search');
+  const studentList = document.getElementById('student-list');
+  const studentEmpty = document.getElementById('student-empty');
+  const selectedStudentInput = document.getElementById('selected-student');
+
+  function updatePreview(){
+    const title = titleInput.value.trim();
+    const desc = descInput.value.trim();
+    const date = dateInput.value;
+    const time = timeInput.value;
+
+    document.getElementById('prev-title').innerHTML = title
+      ? title
+      : '<span class="preview-empty">Ще не введено...</span>';
+
+    document.getElementById('prev-desc').innerHTML = desc
+      ? desc.substring(0, 120)
+      : '<span class="preview-empty">Короткий опис завдання...</span>';
+
+    if(date){
+      const d = new Date(date + 'T00:00:00');
+      const months = [
+        'січня','лютого','березня','квітня','травня','червня',
+        'липня','серпня','вересня','жовтня','листопада','грудня'
+      ];
+
+      document.getElementById('prev-deadline').textContent =
+        d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + (time ? ' о ' + time : '');
+    } else {
+      document.getElementById('prev-deadline').innerHTML =
+        '<span class="preview-empty">Без дедлайну</span>';
+    }
+  }
+
+  function showStudents(){
+    const query = studentSearch.value.toLowerCase().trim();
+    let found = 0;
+
+    studentList.classList.add('show');
+
+    document.querySelectorAll('.student-opt').forEach(function(option){
+      const text = option.dataset.search.toLowerCase();
+
+      if(query === '' || text.includes(query)){
+        option.style.display = 'flex';
+        found++;
+      } else {
+        option.style.display = 'none';
+      }
+    });
+
+    if(studentEmpty){
+      studentEmpty.style.display = found === 0 ? 'block' : 'none';
+    }
+  }
+
+  studentSearch.addEventListener('focus', showStudents);
+  studentSearch.addEventListener('input', showStudents);
+
+  studentList.addEventListener('click', function(e){
+    const option = e.target.closest('.student-opt');
+    if(!option) return;
+
+    document.querySelectorAll('.student-opt').forEach(function(item){
+      item.classList.remove('selected');
+    });
+
+    option.classList.add('selected');
+
+    selectedStudentInput.value = option.dataset.id;
+
+    studentSearch.value = option.dataset.name + ' — ' + option.dataset.email;
+    document.getElementById('prev-student').textContent = option.dataset.name;
+
+    studentList.classList.remove('show');
+  });
+
+  titleInput.addEventListener('input', updatePreview);
+  descInput.addEventListener('input', updatePreview);
+  dateInput.addEventListener('change', updatePreview);
+  timeInput.addEventListener('change', updatePreview);
+
+  updatePreview();
+});
+</script>
+{% endblock %}
