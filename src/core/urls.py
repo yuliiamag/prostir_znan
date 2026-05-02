@@ -23,6 +23,12 @@ urlpatterns = [
     path("student/profile/", views.student_profile, name="student_profile"),
     path("homework/", views.homework, name="homework"),
     path("homework/new/", views.create_homework, name="create_homework"),
+    path("homework/<int:pk>/", views.homework_detail, name="homework_detail"),
+    path("homework/<int:pk>/delete/", views.delete_homework, name="delete_homework"),
+    path("homework/create/", views.create_homework, name="create_homework"),
+    path("homework/<int:pk>/edit/", views.create_homework, name="edit_homework"),
+    path("teacher/<int:teacher_id>/profile/", views.teacher_public_profile, name="teacher_public_profile"),
+    path("student/<int:student_id>/profile/", views.student_public_profile, name="student_public_profile"),
 ]
 
 

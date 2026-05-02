@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if profile_type == "teacher" %}
+    Профіль вчителя • MathSpace
+  {% else %}
+    Профіль учня • MathSpace
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<style>
+.profile-page {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 24px 16px 42px;
+}
+
+.profile-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  color: #4a7a63;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profile-hero {
+  position: relative;
+  overflow: hidden;
+  background: #0c5f4f;
+  border-radius: 24px;
+  padding: 28px;
+  color: white;
+  margin-bottom: 18px;
+}
+
+.profile-hero::before {
+  content: "";
+  position: absolute;
+  right: -70px;
+  top: -70px;
+  width: 210px;
+  height: 210px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+}
+
+.profile-hero::after {
+  content: "";
+  position: absolute;
+  left: -50px;
+  bottom: -80px;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.05);
+}
+
+.profile-hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.profile-avatar {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.14);
+  border: 3px solid rgba(255,255,255,.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.profile-main {
+  flex: 1;
+}
+
+.profile-name {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 7px;
+  letter-spacing: -0.4px;
+}
+
+.profile-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.profile-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.13);
+  color: #d9fff1;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.profile-subject {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.1);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.profile-bio {
+  max-width: 620px;
+  color: rgba(255,255,255,.72);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.profile-actions {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+.profile-btn {
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 11px 18px;
+  font-size: 13px;
+  font-weight: 800;
+  transition: .15s ease;
+}
+
+.profile-btn-primary {
+  background: #e8f5ef;
+  color: #0c5f4f;
+}
+
+.profile-btn-primary:hover {
+  background: white;
+  transform: translateY(-1px);
+}
+
+.profile-btn-ghost {
+  background: rgba(255,255,255,.1);
+  color: white;
+  border: 1px solid rgba(255,255,255,.16);
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1.05fr .95fr;
+  gap: 16px;
+}
+
+.profile-card {
+  background: #fff;
+  border: 1px solid #d6ede3;
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.profile-card-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #8eaf9f;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 14px;
+}
+
+.info-row,
+.lesson-row,
+.hw-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 0;
+  border-bottom: 1px solid #e8f5ef;
+}
+
+.info-row:last-child,
+.lesson-row:last-child,
+.hw-row:last-child {
+  border-bottom: none;
+}
+
+.info-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #e8f5ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.info-label {
+  font-size: 11px;
+  color: #8eaf9f;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #0d2b1f;
+  font-weight: 600;
+}
+
+.lesson-date {
+  min-width: 74px;
+  font-size: 12px;
+  color: #0c5f4f;
+  font-weight: 800;
+}
+
+.lesson-body,
+.hw-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.lesson-title,
+.hw-title {
+  color: #0d2b1f;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lesson-sub,
+.hw-sub {
+  margin-top: 3px;
+  color: #8eaf9f;
+  font-size: 12px;
+}
+
+.status {
+  white-space: nowrap;
+  border-radius: 9px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.status-plan {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.status-done {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-late {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.empty-box {
+  background: #f2faf6;
+  color: #4a7a63;
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 850px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-hero-content {
+    flex-direction: column;
+  }
+
+  .profile-actions {
+    flex-direction: column;
+  }
+
+  .profile-btn {
+    text-align: center;
+  }
+}
+</style>
+
+<div class="profile-page">
+
+  {% if profile_type == "teacher" %}
+    <a href="javascript:history.back()" class="profile-back">
+      ← Назад
+    </a>
+
+    <section class="profile-hero">
+      <div class="profile-hero-content">
+        <div class="profile-avatar">
+          {{ teacher.user.first_name|first }}{{ teacher.user.last_name|first }}
+        </div>
+
+        <div class="profile-main">
+          <h1 class="profile-name">
+            {{ teacher.user.first_name }} {{ teacher.user.last_name }}
+          </h1>
+
+          <div class="profile-meta">
+            <span class="profile-badge">Вчитель</span>
+            {% if teacher.subject %}
+              <span class="profile-subject">📘 {{ teacher.subject }}</span>
+            {% endif %}
+          </div>
+
+          <p class="profile-bio">
+            {% if teacher.bio %}
+              {{ teacher.bio }}
+            {% else %}
+
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <div class="profile-actions">
+        <a href="{% url 'calendar' %}" class="profile-btn profile-btn-primary">📅 Переглянути розклад</a>
+        <a href="#" class="profile-btn profile-btn-ghost">💬 Написати повідомлення</a>
+      </div>
+    </section>
+
+    <div class="profile-grid">
+      <div>
+        <section class="profile-card">
+          <div class="profile-card-title">📅 Найближчі уроки з цим вчителем</div>
+
+          {% for lesson in upcoming_lessons %}
+            <div class="lesson-row">
+              <div class="lesson-date">{{ lesson.start_time|date:"d.m" }}</div>
+              <div class="lesson-body">
+                <div class="lesson-title">{{ lesson.title }}</div>
+                <div class="lesson-sub">
+                  {{ lesson.start_time|date:"H:i" }}
+                  {% if lesson.end_time %} — {{ lesson.end_time|date:"H:i" }}{% endif %}
+                </div>
+              </div>
+              <span class="status status-plan">Заплановано</span>
+            </div>
+          {% empty %}
+            <div class="empty-box">Найближчих уроків поки немає.</div>
+          {% endfor %}
+        </section>
+
+        <section class="profile-card">
+          <div class="profile-card-title">📝 Останні домашні завдання</div>
+
+          {% for hw in homeworks %}
+            <div class="hw-row">
+              <div class="info-icon">📗</div>
+              <div class="hw-body">
+                <div class="hw-title">{{ hw.title }}</div>
+                <div class="hw-sub">
+                  {% if hw.deadline %}
+                    до {{ hw.deadline|date:"d.m.Y H:i" }}
+                  {% else %}
+                    без дедлайну
+                  {% endif %}
+                </div>
+              </div>
+              <span class="status status-plan">{{ hw.get_status_display|default:hw.status }}</span>
+            </div>
+          {% empty %}
+            <div class="empty-box">Домашніх завдань від цього вчителя поки немає.</div>
+          {% endfor %}
+        </section>
+      </div>
+
+      <div>
+        <section class="profile-card">
+          <div class="profile-card-title">📞 Контактна інформація</div>
+
+          <div class="info-row">
+            <div class="info-icon">📧</div>
+            <div>
+              <div class="info-label">Email</div>
+              <div class="info-value">{{ teacher.user.email }}</div>
+            </div>
+          </div>
+
+          {% if teacher.phone %}
+          <div class="info-row">
+            <div class="info-icon">📱</div>
+            <div>
+              <div class="info-label">Телефон</div>
+              <div class="info-value">{{ teacher.phone }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if teacher.subject %}
+          <div class="info-row">
+            <div class="info-icon">📘</div>
+            <div>
+              <div class="info-label">Предмет</div>
+              <div class="info-value">{{ teacher.subject }}</div>
+            </div>
+          </div>
+          {% endif %}
+        </section>
+      </div>
+    </div>
+
+  {% else %}
+
+    <a href="javascript:history.back()" class="profile-back">
+      ← Назад
+    </a>
+
+    <section class="profile-hero">
+      <div class="profile-hero-content">
+        <div class="profile-avatar">
+          {{ student.user.first_name|first }}{{ student.user.last_name|first }}
+        </div>
+
+        <div class="profile-main">
+          <h1 class="profile-name">
+            {{ student.user.first_name }} {{ student.user.last_name }}
+          </h1>
+
+          <div class="profile-meta">
+            <span class="profile-badge">Учень</span>
+            {% if student.grade %}
+              <span class="profile-subject">🎓 {{ student.grade }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-actions">
+        <a href="{% url 'create_lesson' %}" class="profile-btn profile-btn-primary">+ Новий урок</a>
+        <a href="{% url 'create_homework' %}" class="profile-btn profile-btn-ghost">📝 Нове завдання</a>
+        <a href="#" class="profile-btn profile-btn-ghost">💬 Написати</a>
+      </div>
+    </section>
+
+    <div class="profile-grid">
+      <div>
+        <section class="profile-card">
+          <div class="profile-card-title">📅 Найближчі уроки</div>
+
+          {% for lesson in upcoming_lessons %}
+            <div class="lesson-row">
+              <div class="lesson-date">{{ lesson.start_time|date:"d.m" }}</div>
+              <div class="lesson-body">
+                <div class="lesson-title">{{ lesson.title }}</div>
+                <div class="lesson-sub">
+                  {{ lesson.start_time|date:"H:i" }}
+                  {% if lesson.end_time %} — {{ lesson.end_time|date:"H:i" }}{% endif %}
+                </div>
+              </div>
+              <span class="status status-plan">Заплановано</span>
+            </div>
+          {% empty %}
+            <div class="empty-box">Найближчих уроків з цим учнем поки немає.</div>
+          {% endfor %}
+        </section>
+
+        <section class="profile-card">
+          <div class="profile-card-title">📝 Домашні завдання</div>
+
+          {% for hw in homeworks %}
+            <div class="hw-row">
+              <div class="info-icon">📗</div>
+              <div class="hw-body">
+                <div class="hw-title">{{ hw.title }}</div>
+                <div class="hw-sub">
+                  {% if hw.deadline %}
+                    до {{ hw.deadline|date:"d.m.Y H:i" }}
+                  {% else %}
+                    без дедлайну
+                  {% endif %}
+                </div>
+              </div>
+
+              {% if hw.status == "late" %}
+                <span class="status status-late">Прострочено</span>
+              {% elif hw.status == "completed" %}
+                <span class="status status-done">Виконано</span>
+              {% else %}
+                <span class="status status-plan">{{ hw.get_status_display|default:hw.status }}</span>
+              {% endif %}
+            </div>
+          {% empty %}
+            <div class="empty-box">Для цього учня ще немає домашніх завдань.</div>
+          {% endfor %}
+        </section>
+      </div>
+
+      <div>
+        <section class="profile-card">
+          <div class="profile-card-title">📞 Контактна інформація</div>
+
+          <div class="info-row">
+            <div class="info-icon">📧</div>
+            <div>
+              <div class="info-label">Email</div>
+              <div class="info-value">{{ student.user.email }}</div>
+            </div>
+          </div>
+
+          {% if student.phone %}
+          <div class="info-row">
+            <div class="info-icon">📱</div>
+            <div>
+              <div class="info-label">Телефон</div>
+              <div class="info-value">{{ student.phone }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if student.grade %}
+          <div class="info-row">
+            <div class="info-icon">🎓</div>
+            <div>
+              <div class="info-label">Клас</div>
+              <div class="info-value">{{ student.grade }}</div>
+            </div>
+          </div>
+          {% endif %}
+        </section>
+      </div>
+    </div>
+
+  {% endif %}
+</div>
+{% endblock %}

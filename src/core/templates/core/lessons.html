@@ -226,7 +226,7 @@
 
     <div class="lessons-scroll">
       {% for lesson in today_lessons %}
-        <a href="#" class="lesson-card today">
+        <a href="{% url 'lesson_detail' lesson.id %}" class="lesson-card today">
           <div class="lesson-time">
             <div class="lesson-hour">{{ lesson.start_time|time:"H:i" }}</div>
             <div class="lesson-duration">урок</div>
@@ -256,7 +256,7 @@
 
     <div class="lessons-scroll">
       {% for lesson in future_lessons %}
-        <a href="#" class="lesson-card">
+        <a href="{% url 'lesson_detail' lesson.id %}" class="lesson-card">
           <div class="lesson-time">
             <div class="lesson-hour">{{ lesson.start_time|time:"H:i" }}</div>
             <div class="lesson-duration">урок</div>
@@ -287,7 +287,7 @@
 
     <div class="lessons-scroll">
       {% for lesson in past_lessons %}
-        <a href="#" class="lesson-card past">
+        <a href="{% url 'lesson_detail' lesson.id %}" class="lesson-card past">
           <div class="lesson-time">
             <div class="lesson-hour">{{ lesson.start_time|time:"H:i" }}</div>
             <div class="lesson-duration">урок</div>

@@ -157,3 +157,6 @@ ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = "/dashboard/"
 DEFAULT_FROM_EMAIL = "MathSpace <ssvit.svichok@gmail.com>"
 
 ACCOUNT_SIGNUP_FORM_CLASS = "core.forms.CustomSignupForm"
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
