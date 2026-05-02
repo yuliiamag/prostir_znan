@@ -1,0 +1,989 @@
+{% extends "base.html" %}
+
+{% block title %}Деталі завдання • MathSpace{% endblock %}
+
+{% block content %}
+
+<div class="homework-detail-page">
+
+  <a href="{% url 'homework' %}" class="back-btn">← Домашні завдання</a>
+
+  <section class="hw-hero
+    {% if is_student and homework.status == 'assigned' %}student-todo{% endif %}
+    {% if is_student and homework.status == 'submitted' %}student-submitted{% endif %}
+    {% if is_student and homework.status == 'checked' %}student-done{% endif %}
+    {% if homework.status == 'late' %}student-late{% endif %}
+    {% if is_teacher %}teacher-view{% endif %}
+  ">
+
+    <div class="hero-top">
+      <div>
+        {% if homework.status == "assigned" %}
+          <span class="status-badge todo">⏳ Потрібно здати</span>
+        {% elif homework.status == "submitted" %}
+          <span class="status-badge checking">🕐 Очікує перевірки</span>
+        {% elif homework.status == "checked" %}
+          <span class="status-badge done">✓ Перевірено</span>
+        {% elif homework.status == "late" %}
+          <span class="status-badge late">⚠ Прострочено</span>
+        {% endif %}
+
+        <h1>{{ homework.title }}</h1>
+
+        <div class="hero-meta">
+          {% if homework.topic %}
+            <span>📚 {{ homework.topic }}</span>
+            <span>·</span>
+          {% endif %}
+
+          {% if is_student %}
+            <span>{{ homework.teacher.first_name }} {{ homework.teacher.last_name }}</span>
+          {% else %}
+            <span>{{ homework.student.first_name }} {{ homework.student.last_name }}</span>
+          {% endif %}
+
+          {% if homework.deadline %}
+            <span>·</span>
+            <span>до {{ homework.deadline|date:"d.m.Y H:i" }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if is_teacher %}
+      <div class="hero-actions">
+        <a href="{% url 'edit_homework' homework.pk %}" class="hero-btn ghost">✏️ Редагувати</a>
+
+        <form method="post" action="{% url 'delete_homework' homework.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="hero-btn danger">🗑 Видалити</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+  </section>
+
+  <div class="detail-grid">
+
+    <main class="left-col">
+
+      <section class="detail-card">
+        <h2>📋 Завдання</h2>
+
+        <div class="task-box">
+          {{ homework.description|linebreaks }}
+        </div>
+
+        {% if homework.deadline %}
+        <div class="deadline-box">
+          <div class="deadline-icon">⏰</div>
+          <div>
+            <div class="deadline-label">Дедлайн</div>
+            <div class="deadline-value">{{ homework.deadline|date:"d.m.Y H:i" }}</div>
+          </div>
+        </div>
+        {% endif %}
+      </section>
+
+      {% if homework.materials.all %}
+      <section class="detail-card">
+        <h2>📁 Матеріали від вчителя</h2>
+
+        {% for material in homework.materials.all %}
+          <a href="{{ material.file.url }}" target="_blank" class="file-row">
+            <span class="file-icon">📄</span>
+            <div>
+              <strong>{{ material.file.name|cut:"homework_materials/" }}</strong>
+              <small>Відкрити або завантажити</small>
+            </div>
+          </a>
+        {% endfor %}
+      </section>
+      {% endif %}
+
+      {% if is_student %}
+      <section class="detail-card">
+
+        <h2>
+          {% if submission %}
+            📤 Твоя відповідь
+          {% else %}
+            📤 Здати завдання
+          {% endif %}
+        </h2>
+
+        {% if submission %}
+          <div class="submitted-box">
+            <div class="submitted-icon">✅</div>
+            <strong>Завдання здано</strong>
+            <p>{{ submission.submitted_at|date:"d.m.Y H:i" }}</p>
+          </div>
+
+          {% if submission.answer_text %}
+            <div class="answer-box">
+              {{ submission.answer_text|linebreaks }}
+            </div>
+          {% endif %}
+
+          {% if submission.files.all %}
+            <div class="submitted-files">
+              {% for file in submission.files.all %}
+                <div class="file-row file-row-between">
+                  <a href="{{ file.file.url }}" target="_blank">
+                    📄 {{ file.file.name|cut:"homework_answers/" }}
+                  </a>
+
+                  {% if homework.status != "checked" %}
+                    <form method="post">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete_submission_file">
+                      <input type="hidden" name="file_id" value="{{ file.id }}">
+                      <button type="submit" class="small-danger">✕</button>
+                    </form>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endif %}
+
+        {% if homework.status != "checked" %}
+
+          {% if submission and not edit_mode %}
+            <a href="?edit=1" class="edit-answer-btn">
+               Редагувати відповідь
+            </a>
+          {% endif %}
+
+  {% if not submission or edit_mode %}
+    <form method="post" enctype="multipart/form-data" class="submit-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="submit_homework">
+
+            {% if homework.allow_text_answer %}
+              <label>Текстова відповідь</label>
+              <textarea name="answer_text" placeholder="Напиши відповідь тут...">{% if submission %}{{ submission.answer_text }}{% endif %}</textarea>
+            {% endif %}
+
+            {% if homework.allow_file_answer %}
+  <div class="answer-field">
+    <label class="pretty-label">Файли / фото</label>
+
+    <label class="answer-upload-box">
+      <input type="file" name="files" id="answer-files-input" multiple>
+
+      <div class="answer-upload-icon">📎</div>
+
+      <div>
+        <div class="answer-upload-title">Додати файли</div>
+        <div class="answer-upload-subtitle">
+          PDF, Word, фото або інші файли відповіді
+        </div>
+      </div>
+    </label>
+
+    <div id="answer-files-list" class="answer-files-list"></div>
+  </div>
+{% endif %}
+
+            <button type="submit" class="main-btn">
+              {% if submission %}
+                Зберегти зміни
+              {% else %}
+                Надіслати завдання
+              {% endif %}
+            </button>
+          </form>
+        {% endif %}
+        {% endif %}
+
+      </section>
+      {% endif %}
+
+      {% if is_teacher %}
+      <section class="detail-card">
+        <h2>📥 Відповідь учня</h2>
+
+        {% if submission %}
+          <div class="student-answer">
+            <div class="answer-header">
+              <strong>{{ homework.student.first_name }} {{ homework.student.last_name }}</strong>
+              <span>{{ submission.submitted_at|date:"d.m.Y H:i" }}</span>
+            </div>
+
+            {% if submission.answer_text %}
+              <div class="answer-box">
+                {{ submission.answer_text|linebreaks }}
+              </div>
+            {% endif %}
+
+            {% if submission.files.all %}
+              {% for file in submission.files.all %}
+                <a href="{{ file.file.url }}" target="_blank" class="file-row">
+                  <span class="file-icon">📄</span>
+                  <div>
+                    <strong>{{ file.file.name|cut:"homework_answers/" }}</strong>
+                    <small>Відкрити файл учня</small>
+                  </div>
+                </a>
+              {% endfor %}
+            {% endif %}
+          </div>
+
+          <form method="post" class="review-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="review_homework">
+
+            <label>Коментар учню</label>
+            <textarea name="teacher_comment" placeholder="Напиши коментар до роботи...">{% if submission.teacher_comment %}{{ submission.teacher_comment }}{% else %}{{ homework.teacher_comment }}{% endif %}</textarea>
+
+            <div class="review-actions">
+              <button type="submit" name="result" value="checked" class="approve-btn">
+                ✓ Виконано
+              </button>
+
+
+            </div>
+          </form>
+        {% else %}
+          <div class="empty-box">
+            Учень ще не здав це домашнє завдання.
+          </div>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      {% if homework.status == "checked" and homework.teacher_comment %}
+      <section class="detail-card">
+        <h2>💬 Коментар вчителя</h2>
+
+        <div class="teacher-comment-box">
+          <strong>✅ Завдання перевірено</strong>
+          <p>{{ homework.teacher_comment }}</p>
+
+          {% if homework.checked_at %}
+            <small>Перевірено: {{ homework.checked_at|date:"d.m.Y H:i" }}</small>
+          {% endif %}
+        </div>
+      </section>
+      {% endif %}
+
+    </main>
+
+    <aside class="right-col">
+
+      <section class="detail-card">
+        <h2>ℹ️ Деталі</h2>
+
+        {% if homework.topic %}
+        <div class="info-row">
+          <span>📚</span>
+          <div>
+            <small>Тема</small>
+            <strong>{{ homework.topic }}</strong>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="info-row">
+          <span>👩‍🏫</span>
+          <div>
+            <small>Вчитель</small>
+            <strong>{{ homework.teacher.first_name }} {{ homework.teacher.last_name }}</strong>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <span>👩‍🎓</span>
+          <div>
+            <small>Учень</small>
+            <strong>{{ homework.student.first_name }} {{ homework.student.last_name }}</strong>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <span>📅</span>
+          <div>
+            <small>Видано</small>
+            <strong>{{ homework.created_at|date:"d.m.Y" }}</strong>
+          </div>
+        </div>
+
+        {% if homework.deadline %}
+        <div class="info-row">
+          <span>⏰</span>
+          <div>
+            <small>Дедлайн</small>
+            <strong>{{ homework.deadline|date:"d.m.Y H:i" }}</strong>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if submission %}
+        <div class="info-row">
+          <span>📤</span>
+          <div>
+            <small>Здано</small>
+            <strong>{{ submission.submitted_at|date:"d.m.Y H:i" }}</strong>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if homework.checked_at %}
+        <div class="info-row">
+          <span>✅</span>
+          <div>
+            <small>Перевірено</small>
+            <strong>{{ homework.checked_at|date:"d.m.Y H:i" }}</strong>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="info-row">
+          <span>📊</span>
+          <div>
+            <small>Статус</small>
+            <strong>
+              {% if homework.status == "assigned" %}
+                Призначено
+              {% elif homework.status == "submitted" %}
+                Очікує перевірки
+              {% elif homework.status == "checked" %}
+                Перевірено
+              {% elif homework.status == "late" %}
+                Прострочено
+              {% endif %}
+            </strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="person-card">
+  {% if is_student %}
+
+    {% if teacher_profile %}
+      <a href="{% url 'teacher_public_profile' teacher_profile.id %}" class="person-link">
+    {% else %}
+      <div class="person-link">
+    {% endif %}
+
+        <div class="avatar">
+          {{ homework.teacher.first_name|slice:":1" }}{{ homework.teacher.last_name|slice:":1" }}
+        </div>
+
+        <h3>{{ homework.teacher.first_name }} {{ homework.teacher.last_name }}</h3>
+        <p>Вчитель</p>
+
+    {% if teacher_profile %}
+      </a>
+    {% else %}
+      </div>
+    {% endif %}
+
+  {% else %}
+
+    {% if student_profile %}
+      <a href="{% url 'student_public_profile' student_profile.id %}" class="person-link">
+    {% else %}
+      <div class="person-link">
+    {% endif %}
+
+        <div class="avatar">
+          {{ homework.student.first_name|slice:":1" }}{{ homework.student.last_name|slice:":1" }}
+        </div>
+
+        <h3>{{ homework.student.first_name }} {{ homework.student.last_name }}</h3>
+        <p>Учень</p>
+
+    {% if student_profile %}
+      </a>
+    {% else %}
+      </div>
+    {% endif %}
+
+  {% endif %}
+</section>
+
+    </aside>
+
+  </div>
+</div>
+
+<style>
+.homework-detail-page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 16px 50px;
+}
+.person-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.edit-answer-btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #0c5f4f;
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.edit-answer-btn:hover {
+  background: #09483d;
+}
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  color: #4a7a63;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.back-btn:hover {
+  color: #0c5f4f;
+}
+
+.hw-hero {
+  border-radius: 20px;
+  padding: 26px 30px;
+  margin-bottom: 20px;
+  color: white;
+  background: #0c5f4f;
+}
+
+.hw-hero.student-todo {
+  background: linear-gradient(135deg, #1A3A6A, #0A3D5C);
+}
+
+.hw-hero.student-submitted,
+.hw-hero.student-done,
+.hw-hero.teacher-view {
+  background: #0c5f4f;
+}
+
+.hw-hero.student-late {
+  background: linear-gradient(135deg, #6A1A1A, #3D0A0A);
+}
+
+.hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.hw-hero h1 {
+  margin: 12px 0 10px;
+  font-size: 24px;
+  line-height: 1.25;
+  color: #fff;
+}
+
+.hero-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: rgba(255,255,255,.75);
+  font-size: 13px;
+}
+
+.status-badge {
+  display: inline-flex;
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status-badge.todo {
+  background: rgba(245,158,11,.18);
+  color: #fcd34d;
+}
+
+.status-badge.checking {
+  background: rgba(245,158,11,.18);
+  color: #fcd34d;
+}
+
+.status-badge.done {
+  background: rgba(45,191,126,.2);
+  color: #86efac;
+}
+
+.status-badge.late {
+  background: rgba(239,68,68,.2);
+  color: #fecaca;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.hero-btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.hero-btn.ghost {
+  background: rgba(255,255,255,.13);
+  color: white;
+}
+
+.hero-btn.danger {
+  background: rgba(239,68,68,.16);
+  color: #fecaca;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 18px;
+}
+
+.left-col,
+.right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.detail-card {
+  background: #fff;
+  border: 1px solid #d6ede3;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.detail-card h2 {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: #0d2b1f;
+}
+
+.task-box,
+.answer-box,
+.student-comment,
+.teacher-comment-box,
+.empty-box {
+  background: #f2faf6;
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: #4a7a63;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.teacher-comment-box strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #0d2b1f;
+}
+
+.teacher-comment-box p {
+  margin: 0 0 8px;
+}
+
+.teacher-comment-box small {
+  color: #8eaf9f;
+  font-size: 11px;
+}
+
+.deadline-box {
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.deadline-icon {
+  font-size: 22px;
+}
+
+.deadline-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #92400e;
+  text-transform: uppercase;
+}
+
+.deadline-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #78350f;
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f2faf6;
+  border-radius: 12px;
+  padding: 11px 13px;
+  margin-bottom: 8px;
+  color: #0d2b1f;
+  text-decoration: none;
+}
+
+.file-row:hover {
+  background: #e8f5ef;
+}
+
+.file-row a {
+  color: #0d2b1f;
+  text-decoration: none;
+}
+
+.file-row-between {
+  justify-content: space-between;
+}
+
+.file-icon {
+  font-size: 18px;
+}
+
+.file-row small {
+  display: block;
+  color: #8eaf9f;
+  font-size: 11px;
+}
+
+.submitted-box {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 14px;
+  padding: 18px;
+  text-align: center;
+  color: #166534;
+  margin-bottom: 14px;
+}
+
+.submitted-icon {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+.submitted-box p {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
+.submitted-files {
+  margin-top: 12px;
+}
+
+.submit-form,
+.review-form {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.submit-form label,
+.review-form label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4a7a63;
+}
+
+.submit-form input,
+.submit-form textarea,
+.review-form textarea {
+  width: 100%;
+  border: 1px solid #d6ede3;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #0d2b1f;
+}
+
+.submit-form textarea,
+.review-form textarea {
+  min-height: 95px;
+  resize: vertical;
+}
+
+.form-hint {
+  color: #8eaf9f;
+  font-size: 11px;
+  margin-top: -4px;
+}
+
+.main-btn,
+.approve-btn,
+.revision-btn {
+  border: 0;
+  border-radius: 12px;
+  padding: 13px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.main-btn,
+.approve-btn {
+  background: #2dbf7e;
+  color: #0a3d2e;
+}
+
+.revision-btn {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.review-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.answer-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.answer-header span {
+  color: #8eaf9f;
+  font-size: 12px;
+}
+
+.small-danger {
+  border: 0;
+  background: transparent;
+  color: #ef4444;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.info-row {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e8f5ef;
+}
+
+.info-row:last-child {
+  border-bottom: 0;
+}
+
+.info-row small {
+  display: block;
+  color: #8eaf9f;
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.info-row strong {
+  font-size: 13px;
+  color: #0d2b1f;
+}
+
+.person-card {
+  background: #0c5f4f;
+  border-radius: 16px;
+  padding: 18px;
+  text-align: center;
+  color: white;
+}
+
+.avatar {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.16);
+  color: #86efac;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.person-card h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.person-card p {
+  margin: 0;
+  color: rgba(255,255,255,.65);
+  font-size: 12px;
+}
+.answer-field{
+  margin-bottom:14px;
+}
+
+.pretty-label{
+  display:block;
+  margin-bottom:7px;
+  font-size:13px;
+  font-weight:900;
+  color:#0c5f4f;
+}
+
+.answer-upload-box{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  border:2px dashed #b9d68f;
+  border-radius:18px;
+  background:#f8fbf3;
+  padding:18px 20px;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.answer-upload-box:hover{
+  background:#edf4e4;
+  border-color:#18a06c;
+}
+
+.answer-upload-box input{
+  display:none;
+}
+
+.answer-upload-icon{
+  width:42px;
+  height:42px;
+  border-radius:14px;
+  background:#eef4e3;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:21px;
+  flex-shrink:0;
+}
+
+.answer-upload-title{
+  font-size:14px;
+  font-weight:900;
+  color:#045055;
+}
+
+.answer-upload-subtitle{
+  margin-top:3px;
+  font-size:12px;
+  color:#667c63;
+}
+
+.answer-files-list{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+.answer-file-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:9px 12px;
+  border-radius:12px;
+  background:#eef4e3;
+  color:#045055;
+  font-size:12px;
+  font-weight:800;
+}
+
+.answer-file-remove{
+  border:none;
+  background:transparent;
+  color:#ef4444;
+  font-size:18px;
+  font-weight:900;
+  cursor:pointer;
+}
+@media (max-width: 850px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-top {
+    flex-direction: column;
+  }
+
+  .hero-actions {
+    flex-wrap: wrap;
+  }
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const input = document.getElementById('answer-files-input');
+  const list = document.getElementById('answer-files-list');
+
+  if(!input || !list) return;
+
+  let selectedFiles = new DataTransfer();
+
+  input.addEventListener('change', function(){
+    Array.from(this.files).forEach(function(file){
+      selectedFiles.items.add(file);
+    });
+
+    input.files = selectedFiles.files;
+    renderFiles();
+  });
+
+  function renderFiles(){
+    list.innerHTML = '';
+
+    Array.from(selectedFiles.files).forEach(function(file, index){
+      const item = document.createElement('div');
+      item.className = 'answer-file-item';
+      item.innerHTML = `
+        <span>📎 ${file.name}</span>
+        <button type="button" class="answer-file-remove" data-index="${index}">×</button>
+      `;
+
+      list.appendChild(item);
+    });
+  }
+
+  list.addEventListener('click', function(e){
+    if(!e.target.classList.contains('answer-file-remove')) return;
+
+    const removeIndex = Number(e.target.dataset.index);
+    const newFiles = new DataTransfer();
+
+    Array.from(selectedFiles.files).forEach(function(file, index){
+      if(index !== removeIndex){
+        newFiles.items.add(file);
+      }
+    });
+
+    selectedFiles = newFiles;
+    input.files = selectedFiles.files;
+    renderFiles();
+  });
+});
+</script>
+{% endblock %}

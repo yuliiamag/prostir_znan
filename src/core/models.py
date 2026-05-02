@@ -117,28 +117,33 @@ class Homework(models.Model):
 
     lesson = models.ForeignKey(
         "CalendarEvent",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="homeworks",
         null=True,
         blank=True
     )
+
     teacher = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="created_homeworks"
     )
+
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="student_homeworks"
     )
 
-    title = models.CharField(max_length=200, default="Домашнє завдання")
+    title = models.CharField(max_length=200)
+    topic = models.CharField(max_length=200, blank=True)
     description = models.TextField()
+
     deadline = models.DateTimeField(null=True, blank=True)
 
-    answer_text = models.TextField(blank=True)
-    answer_file = models.FileField(upload_to="homework_answers/", blank=True, null=True)
+    allow_text_answer = models.BooleanField(default=True)
+    allow_file_answer = models.BooleanField(default=True)
+    allow_late_submission = models.BooleanField(default=True)
 
     status = models.CharField(
         max_length=20,
@@ -146,11 +151,66 @@ class Homework(models.Model):
         default="assigned"
     )
 
+    teacher_comment = models.TextField(blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
-    submitted_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    checked_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.title} — {self.student}"
 
+
+class HomeworkMaterial(models.Model):
+    homework = models.ForeignKey(
+        Homework,
+        on_delete=models.CASCADE,
+        related_name="materials"
+    )
+
+    file = models.FileField(upload_to="homework_materials/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Матеріал до: {self.homework.title}"
+
+
+class HomeworkSubmission(models.Model):
+    homework = models.OneToOneField(
+        Homework,
+        on_delete=models.CASCADE,
+        related_name="submission"
+    )
+
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="homework_submissions"
+    )
+
+    answer_text = models.TextField(blank=True)
+
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    teacher_comment = models.TextField(blank=True)
+    checked_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Відповідь на: {self.homework.title}"
+
+
+class HomeworkSubmissionFile(models.Model):
+    submission = models.ForeignKey(
+        HomeworkSubmission,
+        on_delete=models.CASCADE,
+        related_name="files"
+    )
+
+    file = models.FileField(upload_to="homework_answers/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Файл відповіді: {self.submission.homework.title}"
 
 

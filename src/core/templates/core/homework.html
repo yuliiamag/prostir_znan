@@ -146,17 +146,7 @@ body{
   color:var(--muted);
 }
 
-.filter-pill{
-  padding:7px 14px;
-  border-radius:20px;
-  border:1px solid var(--border);
-  background:var(--white);
-  color:var(--soft);
-  font-size:12px;
-  font-weight:700;
-  cursor:pointer;
-  font-family:inherit;
-}
+
 
 .filter-pill.active{
   background:var(--g-bright);
@@ -299,7 +289,24 @@ body{
 .hw-card.open .hw-description{
   display:block;
 }
+.view-hw-btn{
+  padding:7px 13px;
+  border-radius:10px;
+  background:var(--g-light);
+  color:var(--g-dark);
+  border:1px solid var(--border);
+  font-size:12px;
+  font-weight:800;
+  text-decoration:none;
+  white-space:nowrap;
+  transition:.15s;
+}
 
+.view-hw-btn:hover{
+  background:var(--g-bright);
+  border-color:var(--g-bright);
+  color:var(--g-dark);
+}
 .empty-text{
   background:var(--white);
   border:1px solid var(--border);
@@ -308,7 +315,71 @@ body{
   font-size:14px;
   color:var(--soft);
 }
+.filter-pill {
+  border: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
 
+/* Всі — світла (беж/сіра) */
+.filter-pill:nth-child(2) {
+  background: #f3efe6;
+  color: #6b5c4a;
+}
+
+/* Задано — жовтий */
+.filter-pill:nth-child(3) {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* Здано — синій */
+.filter-pill:nth-child(4) {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* Перевірено — зелений */
+.filter-pill:nth-child(5) {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* Прострочено — червоний */
+.filter-pill:nth-child(6) {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* активна трохи виділяється */
+.filter-pill.active {
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.08) inset;
+}
+
+/* hover */
+.filter-pill:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+.hw-list {
+  max-height: 520px; /* приблизно під 7 карток */
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* красивий скрол */
+.hw-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.hw-list::-webkit-scrollbar-thumb {
+  background: #cde5da;
+  border-radius: 10px;
+}
 @media(max-width:800px){
   .page{
     padding:24px 16px 50px;
@@ -382,63 +453,70 @@ body{
     <button class="filter-pill" onclick="filterHomeworks('late', this)">Прострочено</button>
   </div>
 
+  <div class="hw-list">
   {% for hw in homeworks %}
-  <div class="hw-card {{ hw.status }}" data-status="{{ hw.status }}" onclick="toggleHomework(this)">
-    <div class="hw-card-body">
-      <div class="hw-icon">📘</div>
+    <div class="hw-card {{ hw.status }}" data-status="{{ hw.status }}" onclick="toggleHomework(this)">
+      <div class="hw-card-body">
+        <div class="hw-icon">📘</div>
 
-      <div class="hw-info">
-        <div class="hw-title">{{ hw.title }}</div>
+        <div class="hw-info">
+          <div class="hw-title">{{ hw.title }}</div>
 
-        <div class="hw-meta">
-          <span class="hw-person">
-            {{ hw.teacher.first_name }} {{ hw.teacher.last_name }}
-          </span>
-
-          {% if hw.deadline %}
-            <span class="hw-dot"></span>
-            <span class="hw-deadline">
-              до {{ hw.deadline|date:"d.m.Y H:i" }}
+          <div class="hw-meta">
+            <span class="hw-person">
+              {{ hw.teacher.first_name }} {{ hw.teacher.last_name }}
             </span>
-          {% endif %}
 
-          <span class="hw-dot"></span>
-          <span class="hw-date">
-            створено {{ hw.created_at|date:"d.m.Y" }}
+            {% if hw.deadline %}
+              <span class="hw-dot"></span>
+              <span class="hw-deadline">
+                до {{ hw.deadline|date:"d.m.Y H:i" }}
+              </span>
+            {% endif %}
+
+            <span class="hw-dot"></span>
+            <span class="hw-date">
+              створено {{ hw.created_at|date:"d.m.Y" }}
+            </span>
+          </div>
+        </div>
+
+        <div class="hw-right">
+          <span class="status-badge {{ hw.status }}">
+            {{ hw.get_status_display }}
           </span>
+
+          <a href="{% url 'homework_detail' hw.pk %}" class="view-hw-btn" onclick="event.stopPropagation();">
+            Переглянути
+          </a>
         </div>
       </div>
 
-      <div class="hw-right">
-        <span class="status-badge {{ hw.status }}">
-          {{ hw.get_status_display }}
-        </span>
+      <div class="hw-description">
+        <strong>Опис завдання:</strong><br>
+        {{ hw.description|linebreaksbr }}
+
+        {% if hw.answer_text %}
+          <br><br>
+          <strong>Твоя відповідь:</strong><br>
+          {{ hw.answer_text|linebreaksbr }}
+        {% endif %}
+
+        {% if hw.answer_file %}
+          <br><br>
+          <strong>Файл:</strong>
+          <a href="{{ hw.answer_file.url }}" target="_blank">Переглянути файл</a>
+        {% endif %}
       </div>
     </div>
 
-    <div class="hw-description">
-      <strong>Опис завдання:</strong><br>
-      {{ hw.description|linebreaksbr }}
-
-      {% if hw.answer_text %}
-        <br><br>
-        <strong>Твоя відповідь:</strong><br>
-        {{ hw.answer_text|linebreaksbr }}
-      {% endif %}
-
-      {% if hw.answer_file %}
-        <br><br>
-        <strong>Файл:</strong>
-        <a href="{{ hw.answer_file.url }}" target="_blank">Переглянути файл</a>
-      {% endif %}
-    </div>
-  </div>
   {% empty %}
     <p class="empty-text">Немає домашніх завдань.</p>
   {% endfor %}
 </div>
-{% endif %}
 
+</div>
+{% endif %}
 
 {% if role == "teacher" %}
 <div class="page">
@@ -490,65 +568,73 @@ body{
     <button class="filter-pill" onclick="filterHomeworks('late', this)">Прострочено</button>
   </div>
 
+<div class="hw-list">
+
   {% for hw in homeworks %}
-  <div class="hw-card {{ hw.status }}" data-status="{{ hw.status }}" onclick="toggleHomework(this)">
-    <div class="hw-card-body">
-      <div class="hw-icon">📗</div>
+    <div class="hw-card {{ hw.status }}" data-status="{{ hw.status }}" onclick="toggleHomework(this)">
+      <div class="hw-card-body">
+        <div class="hw-icon">📗</div>
 
-      <div class="hw-info">
-        <div class="hw-title">{{ hw.title }}</div>
+        <div class="hw-info">
+          <div class="hw-title">{{ hw.title }}</div>
 
-        <div class="hw-meta">
-          <span class="hw-person">
-            {{ hw.student.first_name }} {{ hw.student.last_name }}
-          </span>
-
-          {% if hw.deadline %}
-            <span class="hw-dot"></span>
-            <span class="hw-deadline">
-              до {{ hw.deadline|date:"d.m.Y H:i" }}
+          <div class="hw-meta">
+            <span class="hw-person">
+              {{ hw.student.first_name }} {{ hw.student.last_name }}
             </span>
-          {% endif %}
 
-          <span class="hw-dot"></span>
-          <span class="hw-date">
-            створено {{ hw.created_at|date:"d.m.Y" }}
+            {% if hw.deadline %}
+              <span class="hw-dot"></span>
+              <span class="hw-deadline">
+                до {{ hw.deadline|date:"d.m.Y H:i" }}
+              </span>
+            {% endif %}
+
+            <span class="hw-dot"></span>
+            <span class="hw-date">
+              створено {{ hw.created_at|date:"d.m.Y" }}
+            </span>
+          </div>
+        </div>
+
+        <div class="hw-right">
+          <span class="status-badge {{ hw.status }}">
+            {{ hw.get_status_display }}
           </span>
+
+          <a href="{% url 'homework_detail' hw.pk %}" class="view-hw-btn" onclick="event.stopPropagation();">
+            Переглянути
+          </a>
         </div>
       </div>
 
-      <div class="hw-right">
-        <span class="status-badge {{ hw.status }}">
-          {{ hw.get_status_display }}
-        </span>
+      <div class="hw-description">
+        <strong>Опис завдання:</strong><br>
+        {{ hw.description|linebreaksbr }}
+
+        {% if hw.answer_text %}
+          <br><br>
+          <strong>Відповідь учня:</strong><br>
+          {{ hw.answer_text|linebreaksbr }}
+        {% endif %}
+
+        {% if hw.answer_file %}
+          <br><br>
+          <strong>Файл учня:</strong>
+          <a href="{{ hw.answer_file.url }}" target="_blank">Переглянути файл</a>
+        {% endif %}
       </div>
     </div>
 
-    <div class="hw-description">
-      <strong>Опис завдання:</strong><br>
-      {{ hw.description|linebreaksbr }}
-
-      {% if hw.answer_text %}
-        <br><br>
-        <strong>Відповідь учня:</strong><br>
-        {{ hw.answer_text|linebreaksbr }}
-      {% endif %}
-
-      {% if hw.answer_file %}
-        <br><br>
-        <strong>Файл учня:</strong>
-        <a href="{{ hw.answer_file.url }}" target="_blank">Переглянути файл</a>
-      {% endif %}
-    </div>
-  </div>
   {% empty %}
     <p class="empty-text">Ще немає створених завдань.</p>
+
   {% endfor %}
+</div>
 </div>
 {% endif %}
 
 {% endblock %}
-
 {% block extra_js %}
 <script>
 function filterHomeworks(status, button){

@@ -2,7 +2,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import JoinTeacherByCodeForm, TeacherProfileEditForm
-from .models import TeacherProfile, StudentTeacherLink, CalendarEvent, StudentProfile,Homework
+from .models import TeacherProfile, StudentTeacherLink, CalendarEvent, StudentProfile,Homework, HomeworkMaterial,HomeworkSubmission,HomeworkSubmissionFile
 from datetime import timedelta
 from django.db.models import Q
 from django.utils import timezone
@@ -645,6 +645,11 @@ def homework(request):
             student=request.user
         ).select_related("teacher").order_by("-created_at")
 
+    homeworks.filter(
+        status="assigned",
+        deadline__lt=timezone.now()
+    ).update(status="late")
+
     return render(request, "core/homework.html", {
         "role": role,
         "homeworks": homeworks,
@@ -656,12 +661,20 @@ def homework(request):
     })
 
 @login_required
-def create_homework(request):
+def create_homework(request, pk=None):
     teacher_profile = TeacherProfile.objects.filter(user=request.user).first()
 
     if not teacher_profile:
-        #messages.error(request, "Створювати домашні завдання може тільки вчитель.")
         return redirect("dashboard")
+
+    homework = None
+
+    if pk:
+        homework = get_object_or_404(
+            Homework,
+            pk=pk,
+            teacher=request.user
+        )
 
     student_links = StudentTeacherLink.objects.filter(
         teacher=teacher_profile
@@ -676,8 +689,13 @@ def create_homework(request):
         deadline_date = request.POST.get("deadline_date")
         deadline_time = request.POST.get("deadline_time") or "23:59"
 
+        allow_late = bool(request.POST.get("allow_late"))
+        require_file = bool(request.POST.get("require_file"))
+        materials = request.FILES.getlist("materials")
+
         if not student_id or not title or not description:
-            #messages.error(request, "Заповни учня, назву та опис завдання.")
+            if homework:
+                return redirect("edit_homework", pk=homework.pk)
             return redirect("create_homework")
 
         student_profile = StudentProfile.objects.filter(
@@ -686,10 +704,12 @@ def create_homework(request):
         ).select_related("user").first()
 
         if not student_profile:
-            #messages.error(request, "Цей учень не прив'язаний до твого профілю.")
+            if homework:
+                return redirect("edit_homework", pk=homework.pk)
             return redirect("create_homework")
 
         deadline = None
+
         if deadline_date:
             deadline_naive = datetime.strptime(
                 f"{deadline_date} {deadline_time}",
@@ -697,18 +717,260 @@ def create_homework(request):
             )
             deadline = timezone.make_aware(deadline_naive)
 
-        Homework.objects.create(
-            teacher=request.user,
-            student=student_profile.user,
-            title=title,
-            description=description,
-            deadline=deadline,
-            status="assigned",
-        )
+        if homework:
+            homework.student = student_profile.user
+            homework.title = title
+            homework.description = description
+            homework.deadline = deadline
+            homework.allow_late_submission = allow_late
+            homework.allow_file_answer = require_file
+            homework.save()
+        else:
+            homework = Homework.objects.create(
+                teacher=request.user,
+                student=student_profile.user,
+                title=title,
+                description=description,
+                deadline=deadline,
+                status="assigned",
+                allow_late_submission=allow_late,
+                allow_file_answer=require_file,
+            )
 
-        #messages.success(request, "Домашнє завдання створено.")
-        return redirect("homework")
+        delete_ids = request.POST.getlist("delete_material_ids")
+
+        if delete_ids:
+            materials_to_delete = HomeworkMaterial.objects.filter(
+                id__in=delete_ids,
+                homework=homework
+            )
+
+            for material in materials_to_delete:
+                material.file.delete(save=False)
+                material.delete()
+
+        for file in materials:
+            HomeworkMaterial.objects.create(
+                homework=homework,
+                file=file
+            )
+
+        return redirect("homework_detail", pk=homework.pk)
+    selected_student_id = ""
+
+    if homework:
+        student_profile = StudentProfile.objects.filter(user=homework.student).first()
+        if student_profile:
+            selected_student_id = student_profile.id
 
     return render(request, "core/create_homework.html", {
         "students": students,
+        "homework": homework,
+        "is_edit": bool(homework),
+        "selected_student_id": selected_student_id,
     })
+@login_required
+def homework_detail(request, pk):
+    homework = get_object_or_404(Homework, pk=pk)
+    if (
+            homework.status == "assigned"
+            and homework.deadline
+            and timezone.now() > homework.deadline
+    ):
+        homework.status = "late"
+        homework.save()
+
+    is_teacher = request.user == homework.teacher
+    is_student = request.user == homework.student
+
+    if not is_teacher and not is_student:
+        return redirect("dashboard")
+
+    submission = getattr(homework, "submission", None)
+    edit_mode = request.GET.get("edit") == "1"
+    teacher_profile = TeacherProfile.objects.filter(user=homework.teacher).first()
+    student_profile = StudentProfile.objects.filter(user=homework.student).first()
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "submit_homework" and is_student:
+            is_deadline_passed = homework.deadline and timezone.now() > homework.deadline
+
+            if is_deadline_passed and not homework.allow_late_submission:
+                messages.error(request, "Термін здачі вже минув. Пізня здача заборонена.")
+                return redirect("homework_detail", pk=homework.pk)
+
+            submission, created = HomeworkSubmission.objects.get_or_create(
+                homework=homework,
+                student=request.user
+            )
+
+            if homework.allow_text_answer:
+                submission.answer_text = request.POST.get("answer_text", "").strip()
+
+            submission.save()
+
+            if homework.allow_file_answer:
+                files = request.FILES.getlist("files")
+                for file in files:
+                    HomeworkSubmissionFile.objects.create(
+                        submission=submission,
+                        file=file
+                    )
+
+            if is_deadline_passed:
+                homework.status = "late"
+            else:
+                homework.status = "submitted"
+
+            homework.checked_at = None
+            homework.teacher_comment = ""
+            homework.save()
+
+            submission.teacher_comment = ""
+            submission.checked_at = None
+            submission.save()
+
+            messages.success(request, "Домашнє завдання надіслано.")
+            return redirect("homework_detail", pk=homework.pk)
+
+        # учень видаляє свій файл
+        if action == "delete_submission_file" and is_student and submission:
+            file_id = request.POST.get("file_id")
+            file_obj = get_object_or_404(
+                HomeworkSubmissionFile,
+                id=file_id,
+                submission=submission
+            )
+            file_obj.delete()
+            return redirect("homework_detail", pk=homework.pk)
+
+        # вчитель перевіряє
+        if action == "review_homework" and is_teacher and submission:
+            comment = request.POST.get("teacher_comment", "").strip()
+            result = request.POST.get("result")
+
+            if not comment:
+                messages.error(request, "Напиши коментар перед перевіркою.")
+                return redirect("homework_detail", pk=homework.pk)
+
+            submission.teacher_comment = comment
+            submission.checked_at = timezone.now()
+            submission.save()
+
+            homework.teacher_comment = comment
+            homework.checked_at = timezone.now()
+
+            if result == "checked":
+                homework.status = "checked"
+
+            homework.save()
+
+            messages.success(request, "Результат перевірки збережено.")
+            return redirect("homework_detail", pk=homework.pk)
+
+
+
+    return render(request, "core/homework_detail.html", {
+        "homework": homework,
+        "submission": submission,
+        "is_teacher": is_teacher,
+        "is_student": is_student,
+        "now": timezone.now(),
+        "edit_mode": edit_mode,
+        "teacher_profile": teacher_profile,
+        "student_profile": student_profile,
+    })
+
+@login_required
+def delete_homework(request, pk):
+    homework = get_object_or_404(Homework, pk=pk)
+
+    if request.user != homework.teacher:
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        homework.delete()
+        messages.success(request, "Домашнє завдання видалено.")
+        return redirect("homework")
+
+    return redirect("homework_detail", pk=homework.pk)
+
+@login_required
+def teacher_public_profile(request, teacher_id):
+    teacher = get_object_or_404(TeacherProfile, id=teacher_id)
+
+    student_profile = StudentProfile.objects.filter(user=request.user).first()
+
+    if not student_profile:
+        return redirect("dashboard")
+
+    is_linked = StudentTeacherLink.objects.filter(
+        teacher=teacher,
+        student=student_profile
+    ).exists()
+
+    if not is_linked:
+        return redirect("dashboard")
+
+    upcoming_lessons = CalendarEvent.objects.filter(
+        teacher=teacher.user,
+        student=student_profile.user,
+        start_time__gte=timezone.now(),
+        is_cancelled=False
+    ).order_by("start_time")[:3]
+
+    homeworks = Homework.objects.filter(
+        teacher=teacher.user,
+        student=student_profile.user
+    ).order_by("-created_at")[:3]
+
+    context = {
+        "profile_type": "teacher",
+        "teacher": teacher,
+        "upcoming_lessons": upcoming_lessons,
+        "homeworks": homeworks,
+    }
+
+    return render(request, "core/profile_detail.html", context)
+
+
+@login_required
+def student_public_profile(request, student_id):
+    student = get_object_or_404(StudentProfile, id=student_id)
+
+    teacher_profile = TeacherProfile.objects.filter(user=request.user).first()
+
+    if not teacher_profile:
+        return redirect("dashboard")
+
+    is_linked = StudentTeacherLink.objects.filter(
+        teacher=teacher_profile,
+        student=student
+    ).exists()
+
+    if not is_linked:
+        return redirect("dashboard")
+
+    upcoming_lessons = CalendarEvent.objects.filter(
+        teacher=teacher_profile.user,
+        student=student.user,
+        start_time__gte=timezone.now(),
+        is_cancelled=False
+    ).order_by("start_time")[:3]
+
+    homeworks = Homework.objects.filter(
+        teacher=teacher_profile.user,
+        student=student.user
+    ).order_by("-created_at")[:4]
+
+    context = {
+        "profile_type": "student",
+        "student": student,
+        "teacher": teacher_profile,
+        "upcoming_lessons": upcoming_lessons,
+        "homeworks": homeworks,
+    }
+
+    return render(request, "core/profile_detail.html", context)

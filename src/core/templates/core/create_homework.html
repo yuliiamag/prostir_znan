@@ -452,6 +452,83 @@ body{
   color:#667c63;
   margin-top:4px;
 }
+.materials-list{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.material-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 10px;
+  border-radius:10px;
+  background:#eef4e3;
+  color:#045055;
+  font-size:12px;
+  font-weight:700;
+}
+
+.remove-file{
+  border:none;
+  background:transparent;
+  color:#045055;
+  font-size:18px;
+  font-weight:800;
+  cursor:pointer;
+}
+.existing-materials{
+  margin-top:14px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.existing-title{
+  font-size:12px;
+  font-weight:900;
+  color:#045055;
+  margin-bottom:2px;
+}
+
+.existing-material-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:#eef4e3;
+  border:1px solid #d3e2bf;
+  cursor:pointer;
+}
+
+.existing-material-item a{
+  color:#045055;
+  font-size:13px;
+  font-weight:800;
+  text-decoration:none;
+}
+
+.existing-material-item span{
+  display:block;
+  margin-top:3px;
+  color:#7b927c;
+  font-size:11px;
+  font-weight:500;
+}
+
+.existing-material-item input{
+  width:16px;
+  height:16px;
+  accent-color:#ef4444;
+}
+
+.existing-material-item strong{
+  color:#ef4444;
+  font-size:12px;
+}
 @media(max-width:650px){
   .two{
     grid-template-columns:1fr;
@@ -469,7 +546,9 @@ body{
 <div class="hw-topbar">
   <a class="hw-back" href="{% url 'homework' %}">← Домашні завдання</a>
   <div style="width:1px;height:18px;background:rgba(255,255,255,.12);"></div>
-  <div class="hw-top-title">Нове завдання</div>
+  <div class="hw-top-title">
+  {% if is_edit %}Редагування завдання{% else %}Нове завдання{% endif %}
+</div>
 </div>
 
 <form method="post" id="homework-form" enctype="multipart/form-data">
@@ -494,7 +573,13 @@ body{
       autocomplete="off"
     >
 
-    <input type="hidden" name="student" id="selected-student" required>
+    <input
+  type="hidden"
+  name="student"
+  id="selected-student"
+  value="{{ selected_student_id }}"
+  required
+>
 
     <div class="student-list" id="student-list">
       {% for student in students %}
@@ -540,11 +625,12 @@ body{
 
         <div class="field">
           <label class="label">Назва завдання <span class="req">*</span></label>
-          <input
+         <input
             class="input"
             id="hw-title"
             type="text"
             name="title"
+            value="{% if homework %}{{ homework.title }}{% endif %}"
             placeholder="Наприклад: Квадратні рівняння — варіант 2"
             required
           >
@@ -559,7 +645,7 @@ body{
             name="description"
             placeholder="Наприклад: Розв'язати задачі 1–8 зі сторінки 45. Показати всі кроки розв'язання..."
             required
-          ></textarea>
+          >{% if homework %}{{ homework.description }}{% endif %}</textarea>
         </div>
       </div>
 
@@ -572,12 +658,24 @@ body{
         <div class="two">
           <div class="field">
             <label class="label">Дата здачі</label>
-            <input class="input" id="hw-deadline-date" type="date" name="deadline_date">
+            <input
+              class="input"
+              id="hw-deadline-date"
+              type="date"
+              name="deadline_date"
+              value="{% if homework.deadline %}{{ homework.deadline|date:'Y-m-d' }}{% endif %}"
+            >
           </div>
 
           <div class="field">
             <label class="label">Час здачі</label>
-            <input class="input" id="hw-deadline-time" type="time" name="deadline_time" value="23:59">
+            <input
+              class="input"
+              id="hw-deadline-time"
+              type="time"
+              name="deadline_time"
+              value="{% if homework.deadline %}{{ homework.deadline|date:'H:i' }}{% else %}23:59{% endif %}"
+            >
           </div>
         </div>
       </div>
@@ -593,10 +691,30 @@ body{
     <label class="label">Файли, фото або документи</label>
 
     <label class="upload-box">
-      <input type="file" name="materials" multiple>
-      <div class="upload-title">Додати файли</div>
-      <div class="upload-subtitle">PDF, Word, фото або інші матеріали</div>
-    </label>
+  <input type="file" name="materials" id="materials-input" multiple>
+  <div class="upload-title">Додати файли</div>
+  <div class="upload-subtitle">PDF, Word, фото або інші матеріали</div>
+</label>
+{% if is_edit and homework.materials.all %}
+  <div class="existing-materials">
+    <div class="existing-title">Вже додані матеріали</div>
+
+    {% for material in homework.materials.all %}
+      <label class="existing-material-item">
+        <div>
+          <a href="{{ material.file.url }}" target="_blank">
+            📎 {{ material.file.name|cut:"homework_materials/" }}
+          </a>
+          <span>Познач, якщо хочеш видалити</span>
+        </div>
+
+        <input type="checkbox" name="delete_material_ids" value="{{ material.id }}">
+        <strong>Видалити</strong>
+      </label>
+    {% endfor %}
+  </div>
+{% endif %}
+<div id="materials-list" class="materials-list"></div>
   </div>
 </div>
 <div class="card">
@@ -616,20 +734,12 @@ body{
 
   <label class="toggle-row">
     <div>
-      <div class="toggle-name">Дозволити пізню здачу</div>
-      <div class="toggle-desc">Учень зможе надіслати роботу після дедлайну</div>
-    </div>
-    <input type="checkbox" name="allow_late">
-    <span class="toggle"></span>
-  </label>
-
-  <label class="toggle-row">
-    <div>
       <div class="toggle-name">Потрібен файл-відповідь</div>
       <div class="toggle-desc">Учень має прикріпити фото, PDF або документ</div>
     </div>
-    <input type="checkbox" name="require_file">
-    <span class="toggle"></span>
+    <input type="checkbox" name="require_file"
+    {% if not is_edit or homework.allow_file_answer %}checked{% endif %}>
+  <span class="toggle"></span>
   </label>
   <div class="field" style="margin-top:16px;">
   <label class="label">Коментар до здачі</label>
@@ -666,8 +776,12 @@ body{
     </div>
 
     <button type="submit" class="submit-btn">
-      Створити завдання ✓
-    </button>
+  {% if is_edit %}
+    Зберегти зміни ✓
+  {% else %}
+    Створити завдання ✓
+  {% endif %}
+</button>
 
   </div>
 </aside>
@@ -690,6 +804,53 @@ document.addEventListener('DOMContentLoaded', function(){
   const studentList = document.getElementById('student-list');
   const studentEmpty = document.getElementById('student-empty');
   const selectedStudentInput = document.getElementById('selected-student');
+
+ const materialsInput = document.getElementById('materials-input');
+const materialsList = document.getElementById('materials-list');
+
+let selectedMaterials = new DataTransfer();
+
+materialsInput.addEventListener('change', function(){
+  Array.from(this.files).forEach(function(file){
+    selectedMaterials.items.add(file);
+  });
+
+  materialsInput.files = selectedMaterials.files;
+
+  renderMaterials();
+});
+
+function renderMaterials(){
+  materialsList.innerHTML = '';
+
+  Array.from(selectedMaterials.files).forEach(function(file, index){
+    const item = document.createElement('div');
+    item.className = 'material-item';
+    item.innerHTML = `
+      <span>📎 ${file.name}</span>
+      <button type="button" class="remove-file" data-index="${index}">×</button>
+    `;
+    materialsList.appendChild(item);
+  });
+}
+
+materialsList.addEventListener('click', function(e){
+  if(!e.target.classList.contains('remove-file')) return;
+
+  const removeIndex = Number(e.target.dataset.index);
+  const newFiles = new DataTransfer();
+
+  Array.from(selectedMaterials.files).forEach(function(file, index){
+    if(index !== removeIndex){
+      newFiles.items.add(file);
+    }
+  });
+
+  selectedMaterials = newFiles;
+  materialsInput.files = selectedMaterials.files;
+
+  renderMaterials();
+});
 
   function updatePreview(){
     const title = titleInput.value.trim();
