@@ -507,7 +507,7 @@
               {{ student.user.first_name }} {{ student.user.last_name }}
             </div>
             <div class="student-meta">
-              {{ student.class_name|default:"—" }} · {{ student.subject|default:"Математика" }}
+              Предмет: {{ request.user.teacher_profile.subject|default:"Предмет не вказано" }}
             </div>
           </div>
         </div>
@@ -520,8 +520,9 @@
     </div>
   {% endfor %}
 </div>
-</div>
-    <section class="section-card">
+</section>
+
+<section class="section-card">
       <div class="section-header">
         <div class="step-circle">2</div>
         <h2 class="section-title">Тема уроку</h2>
@@ -532,6 +533,14 @@
           <label class="field-label">Тема <span class="required">*</span></label>
           <input type="text" name="topic" id="topic" class="field-input" value="{{ form_data.topic }}">
         </div>
+      </div>
+      <div class="field-block full">
+        <label class="field-label">Опис уроку</label>
+        <textarea
+          name="description"
+          class="field-textarea"
+          placeholder="Наприклад: що будете проходити, які теми, домашнє..."
+        >{{ form_data.description }}</textarea>
       </div>
     </section>
 
@@ -609,9 +618,17 @@
         </div>
         <div class="hint">Обрані дні — урок повторюватиметься щотижня</div>
       </div>
-    </section>
 
-
+      <div class="field-block" style="margin-top:20px;">
+  <label class="field-label">Посилання на урок</label>
+  <input
+    type="url"
+    name="meeting_link"
+    class="field-input"
+    placeholder="https://meet.google.com/..."
+    value="{{ form_data.meeting_link }}"
+  >
+</div>
     </section>
 
     <section class="section-card">
@@ -664,8 +681,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const topicInput = document.getElementById("topic");
   const dateInput = document.getElementById("lesson_date");
   const timeInput = document.getElementById("lesson_time");
-  const homeworkInput = document.getElementById("homework");
-  const notifyInput = document.getElementById("notify_student");
   const durationInputs = document.querySelectorAll('input[name="duration"]');
   const customDurationInput = document.getElementById("custom_duration");
   const repeatInputs = document.querySelectorAll('input[name="repeat_days"]');
@@ -675,8 +690,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const summaryDatetime = document.getElementById("summary-datetime");
   const summaryDuration = document.getElementById("summary-duration");
   const summaryRepeat = document.getElementById("summary-repeat");
-  const summaryHomework = document.getElementById("summary-homework");
-  const summaryNotify = document.getElementById("summary-notify");
+
 
   function updateStudent() {
     const selected = document.querySelector('input[name="student_id"]:checked');
@@ -736,8 +750,6 @@ document.addEventListener("DOMContentLoaded", function () {
     updateDatetime();
     updateDuration();
     updateRepeat();
-    updateHomework();
-    updateNotify();
   }
 
   studentInputs.forEach(input => input.addEventListener("change", updateStudent));

@@ -141,6 +141,23 @@
   font-size: 12px;
   font-weight: 700;
 }
+  .lesson-count {
+  background: #dff1d7;
+  color: #2f6b28;
+}
+
+.homework-count {
+  background: #fff1cc;
+  color: #9a640e;
+}
+
+.calendar-cell {
+  text-decoration: none;
+}
+
+.event-count {
+  margin-top: 6px;
+}
 </style>
 {% endblock %}
 {% block content %}
@@ -174,8 +191,14 @@
           <div class="day-number">{{ item.day }}</div>
 
           {% if item.events %}
-            <div class="event-count">
+            <div class="event-count lesson-count">
               {{ item.events|length }} заняття
+            </div>
+          {% endif %}
+
+          {% if item.homeworks %}
+            <div class="event-count homework-count">
+              {{ item.homeworks|length }} дз
             </div>
           {% endif %}
 

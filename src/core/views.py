@@ -15,6 +15,8 @@ from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 
 def home(request):
+    if not request.user.is_authenticated:
+        return redirect("landing")
     return render(request, "core/home.html")
 
 
@@ -63,6 +65,14 @@ def teacher_dashboard(request):
         event_type="lesson"
     ).select_related("student").order_by("start_time")
 
+    unchecked_homeworks = HomeworkSubmission.objects.filter(
+        homework__teacher=request.user,
+        checked_at__isnull=True
+    ).select_related(
+        "homework",
+        "student"
+    ).order_by("-submitted_at")[:3]
+
     current_date = f"{DAYS[now.weekday()]}, {now.day} {MONTHS[now.month]} {now.year}"
 
     now = timezone.now()
@@ -91,6 +101,7 @@ def teacher_dashboard(request):
             "today_lessons": today_lessons,
             "now": now,
             "completed_lessons_count": completed_lessons_count,
+            "unchecked_homeworks": unchecked_homeworks,
         },
     )
 
@@ -116,6 +127,11 @@ def student_dashboard_view(request):
     teacher_links = StudentTeacherLink.objects.filter(
         student=student_profile
     ).select_related("teacher__user")
+
+    homework_tasks = Homework.objects.filter(
+        student=request.user,
+        submission__isnull=True  # ← головне
+    ).order_by("-created_at")[:3]
 
     next_lesson = CalendarEvent.objects.filter(
         student=request.user,
@@ -147,6 +163,7 @@ def student_dashboard_view(request):
         "homework_tasks": [],
         "completed_tasks_count": 0,
         "total_tasks_count": 0,
+        "homework_tasks": homework_tasks,
     }
 
     return render(request, "core/student_dashboard.html", context)
@@ -223,6 +240,18 @@ def calendar_view(request):
         day = event.start_time.day
         events_by_day.setdefault(day, []).append(event)
 
+    homeworks = Homework.objects.filter(
+        Q(teacher=request.user) | Q(student=request.user),
+        deadline__year=year,
+        deadline__month=month
+    ).order_by("deadline")
+
+    homeworks_by_day = {}
+    for hw in homeworks:
+        if hw.deadline:
+            day = hw.deadline.day
+            homeworks_by_day.setdefault(day, []).append(hw)
+
     month_days = []
     for week in raw_month_days:
         week_data = []
@@ -230,6 +259,7 @@ def calendar_view(request):
             week_data.append({
                 "day": day,
                 "events": events_by_day.get(day, []) if day != 0 else [],
+                "homeworks": homeworks_by_day.get(day, []) if day != 0 else [],
                 "is_today": (
                     day == today.day and
                     month == today.month and
@@ -255,7 +285,9 @@ def calendar_view(request):
         5: "Травень", 6: "Червень", 7: "Липень", 8: "Серпень",
         9: "Вересень", 10: "Жовтень", 11: "Листопад", 12: "Грудень"
     }[month]
+
     weeks_count = len(month_days)
+
     return render(request, "core/calendar.html", {
         "year": year,
         "month": month,
@@ -385,7 +417,8 @@ def create_lesson(request, lesson_id=None):
             "duration": str(duration_minutes) if duration_minutes in durations else "custom",
             "custom_duration": str(duration_minutes) if duration_minutes not in durations else "",
             "repeat_days": [],
-            "homework": lesson.description or "",
+            "description": lesson.description or "",
+            "meeting_link": lesson.meeting_link or "",
             "homework_deadline": "",
             "delivery_method": "Текст у платформі",
             "notify_student": "on",
@@ -399,7 +432,8 @@ def create_lesson(request, lesson_id=None):
             "duration": "30",
             "custom_duration": "",
             "repeat_days": [],
-            "homework": "",
+            "description": "",
+            "meeting_link": "",
             "homework_deadline": "",
             "delivery_method": "Текст у платформі",
             "notify_student": "on",
@@ -413,7 +447,8 @@ def create_lesson(request, lesson_id=None):
         form_data["duration"] = request.POST.get("duration", "30")
         form_data["custom_duration"] = request.POST.get("custom_duration", "").strip()
         form_data["repeat_days"] = request.POST.getlist("repeat_days")
-        form_data["homework"] = request.POST.get("homework", "").strip()
+        form_data["description"] = request.POST.get("description", "").strip()
+        form_data["meeting_link"] = request.POST.get("meeting_link", "").strip()
         form_data["homework_deadline"] = request.POST.get("homework_deadline", "")
         form_data["delivery_method"] = request.POST.get(
             "delivery_method",
@@ -471,7 +506,8 @@ def create_lesson(request, lesson_id=None):
                 if is_edit:
                     lesson.title = form_data["topic"]
                     lesson.event_type = "lesson"
-                    lesson.description = form_data["homework"] or ""
+                    lesson.description = form_data["description"] or ""
+                    lesson.meeting_link = form_data["meeting_link"] or ""
                     lesson.start_time = start_dt
                     lesson.end_time = end_dt
                     lesson.teacher = request.user
@@ -485,14 +521,53 @@ def create_lesson(request, lesson_id=None):
                     lesson = CalendarEvent.objects.create(
                         title=form_data["topic"],
                         event_type="lesson",
-                        description=form_data["homework"] or "",
+                        description=form_data["description"] or "",
+                        meeting_link=form_data["meeting_link"] or "",
                         start_time=start_dt,
                         end_time=end_dt,
                         teacher=request.user,
                         student=selected_student.user,
                     )
 
-                    # messages.success(request, "Урок успішно створено.")
+                    weekday_map = {
+                        "mon": 0,
+                        "tue": 1,
+                        "wed": 2,
+                        "thu": 3,
+                        "fri": 4,
+                        "sat": 5,
+                        "sun": 6,
+                    }
+
+                    repeat_days = form_data["repeat_days"]
+
+                    if repeat_days:
+                        for day_code in repeat_days:
+                            target_weekday = weekday_map.get(day_code)
+
+                            if target_weekday is None:
+                                continue
+
+                            days_ahead = (target_weekday - start_dt.weekday()) % 7
+
+                            if days_ahead == 0:
+                                days_ahead = 7
+
+                            first_repeat_start = start_dt + timedelta(days=days_ahead)
+                            first_repeat_end = end_dt + timedelta(days=days_ahead)
+
+                            for i in range(8):
+                                CalendarEvent.objects.create(
+                                    title=form_data["topic"],
+                                    event_type="lesson",
+                                    description=form_data["description"] or "",
+                                    meeting_link=form_data["meeting_link"] or "",
+                                    start_time=first_repeat_start + timedelta(days=7 * i),
+                                    end_time=first_repeat_end + timedelta(days=7 * i),
+                                    teacher=request.user,
+                                    student=selected_student.user,
+                                )
+
                     return redirect("lesson_detail", lesson_id=lesson.id)
 
             except ValueError:
@@ -565,17 +640,34 @@ def lessons_view(request):
     return render(request, "core/lessons.html", context)
 
 @login_required
-def calendar_day_view(request, year, month, day):
+def calendar_day(request, year, month, day):
     selected_date = date(year, month, day)
 
     events = CalendarEvent.objects.filter(
         Q(teacher=request.user) | Q(student=request.user),
-        start_time__date=selected_date
+        start_time__date=selected_date,
+        is_cancelled=False
     ).order_by("start_time")
+
+    homeworks = Homework.objects.filter(
+        Q(teacher=request.user) | Q(student=request.user),
+        deadline__date=selected_date
+    ).order_by("deadline")
+
+    late_homeworks_count = homeworks.filter(status="late").count()
+    is_today = selected_date == date.today()
+
+    month_name = MONTHS[selected_date.month]
+    weekday_name = DAYS[selected_date.weekday()]
 
     return render(request, "core/calendar_day.html", {
         "selected_date": selected_date,
         "events": events,
+        "homeworks": homeworks,
+        "late_homeworks_count": late_homeworks_count,
+        "is_today": is_today,
+        "month_name": month_name,
+        "weekday_name": weekday_name,
     })
 
 @login_required
@@ -624,11 +716,21 @@ def lesson_detail(request, lesson_id):
 
     is_teacher = lesson.teacher == request.user
     is_student = lesson.student == request.user
+    teacher_profile = None
+    student_profile = None
+
+    if lesson.teacher:
+        teacher_profile = TeacherProfile.objects.filter(user=lesson.teacher).first()
+
+    if lesson.student:
+        student_profile = StudentProfile.objects.filter(user=lesson.student).first()
 
     return render(request, "core/lesson_detail.html", {
         "lesson": lesson,
         "is_teacher": is_teacher,
         "is_student": is_student,
+        "teacher_profile": teacher_profile,
+        "student_profile": student_profile,
     })
 
 
@@ -974,3 +1076,9 @@ def student_public_profile(request, student_id):
     }
 
     return render(request, "core/profile_detail.html", context)
+
+def landing(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    return render(request, "landing.html")

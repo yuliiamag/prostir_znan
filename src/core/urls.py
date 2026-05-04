@@ -6,7 +6,7 @@ from .views import (
 
 )
 urlpatterns = [
-    path("", views.home, name="home"),
+    #path("", views.home, name="home"),
     path("dashboard/", dashboard_view, name="dashboard"),
     path("teachers/", views.teachers, name="teachers"),
     path("dashboard/student/", student_dashboard_view, name="student_dashboard"),
@@ -15,7 +15,7 @@ urlpatterns = [
     path("teacher/profile/", views.teacher_profile, name="teacher_profile"),
     path("lesson/new/", views.create_lesson, name="create_lesson"),
     path("lessons/", views.lessons_view, name="lessons"),
-    path("calendar/<int:year>/<int:month>/<int:day>/", views.calendar_day_view, name="calendar_day"),
+    path("calendar/<int:year>/<int:month>/<int:day>/", views.calendar_day, name="calendar_day"),
     path("teacher/add-student/", views.add_student_manual, name="add_student_manual"),
     path("teacher/generate-code/", views.generate_teacher_code, name="generate_teacher_code"),
     path("lesson/<int:lesson_id>/", views.lesson_detail, name="lesson_detail"),
@@ -29,6 +29,9 @@ urlpatterns = [
     path("homework/<int:pk>/edit/", views.create_homework, name="edit_homework"),
     path("teacher/<int:teacher_id>/profile/", views.teacher_public_profile, name="teacher_public_profile"),
     path("student/<int:student_id>/profile/", views.student_public_profile, name="student_public_profile"),
+   # path("", views.landing, name="landing"),
+    path("", views.home, name="home"),
+    path("landing/", views.landing, name="landing"),
 ]
 
 

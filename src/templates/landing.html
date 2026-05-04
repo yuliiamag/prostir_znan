@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MathSpace — Навчальна платформа</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Geologica:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --g-dark:#061F15;
+  --g-mid:#1A7A52;
+  --g-bright:#2DBF7E;
+  --g-light:#E8F5EF;
+  --text:#0D2B1F;
+  --white:#fff;
+}
+
+body{
+  margin:0;
+  font-family:'Geologica',sans-serif;
+  background:var(--g-dark);
+  color:var(--white);
+}
+
+/* NAV */
+.nav{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:18px 40px;
+}
+
+.logo{
+  font-family:'Unbounded';
+  font-weight:800;
+  color:var(--g-bright);
+}
+
+.nav-btn{
+  padding:10px 20px;
+  border-radius:10px;
+  text-decoration:none;
+  font-weight:600;
+  font-size:14px;
+}
+
+.login{
+  border:1px solid rgba(255,255,255,.2);
+  color:white;
+}
+
+.register{
+  background:var(--g-bright);
+  color:#000;
+}
+
+/* HERO */
+.hero{
+  min-height:80vh;
+  display:flex;
+  align-items:center;
+  padding:0 40px;
+}
+
+.hero-content{
+  max-width:600px;
+}
+
+.hero h1{
+  font-family:'Unbounded';
+  font-size:52px;
+  margin-bottom:20px;
+}
+
+.hero span{
+  color:var(--g-bright);
+}
+
+.hero p{
+  color:rgba(255,255,255,.6);
+  margin-bottom:30px;
+}
+
+.btn-main{
+  background:var(--g-bright);
+  color:#000;
+  padding:14px 28px;
+  border-radius:10px;
+  text-decoration:none;
+  font-weight:700;
+}
+
+/* FEATURES */
+.features{
+  background:#0a2e22;
+  padding:80px 40px;
+}
+
+.features h2{
+  font-family:'Unbounded';
+  margin-bottom:40px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+}
+
+.card{
+  background:rgba(255,255,255,.04);
+  padding:20px;
+  border-radius:12px;
+}
+
+/* FOOTER */
+.footer{
+  padding:30px 40px;
+  text-align:center;
+  border-top:1px solid rgba(255,255,255,.1);
+  font-size:13px;
+  color:rgba(255,255,255,.4);
+}
+</style>
+</head>
+
+<body>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="logo">MathSpace</div>
+
+  <div>
+    <a href="{% url 'account_login' %}" class="nav-btn login">Увійти</a>
+    <a href="{% url 'account_signup' %}" class="nav-btn register">Реєстрація</a>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <h1>Навчання <span>один на один</span></h1>
+
+    <p>
+      Платформа для взаємодії вчителя та учня: уроки, домашні завдання,
+      прогрес — все в одному місці.
+    </p>
+
+    <a href="{% url 'account_signup' %}" class="btn-main">
+      Почати безкоштовно
+    </a>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <h2>Можливості</h2>
+
+  <div class="grid">
+    <div class="card">📅 Розклад занять</div>
+    <div class="card">📝 Домашні завдання</div>
+    <div class="card">📈 Прогрес</div>
+    <div class="card">💬 Спілкування</div>
+    <div class="card">📁 Матеріали</div>
+    <div class="card">🔥 Мотивація</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div class="footer">
+  © 2026 MathSpace
+</div>
+
+</body>
+</html>
