@@ -4,208 +4,552 @@
 
 {% block extra_css %}
 <style>
-  .day-page {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 4px 0 24px;
-  }
-
-  .day-top {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 18px;
-}
-  .day-title-block {
-  margin-left: 10px;
+:root{
+  --ink:#204637;
+  --leaf:#0c5f4f;
+  --bright:#1fa06d;
+  --pale:#f8faf7;
+  --card:#ffffff;
+  --mist:#eef2ec;
+  --border:#a8ca88;
+  --soft:#5c7560;
+  --amber:#f59e0b;
+  --red:#dd5955;
 }
 
-  .back-btn {
-    display: inline-flex;
-    align-items: center;
-    padding: 9px 14px;
-    border-radius: 999px;
-    background: #eef8ea;
-    border: 1px solid #a8ca88;
-    color: #204637;
-    font-size: 14px;
-    font-weight: 600;
-  }
+.day-wrap{
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 4px 0 26px;
+}
 
-  .day-title {
-    margin: 0;
-    font-size: 30px;
-    font-weight: 800;
-    color: #204637;
-  }
+.day-nav{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-bottom:22px;
+}
 
-  .day-subtitle {
-    margin: 4px 0 0;
-    color: #5c7560;
-    font-size: 14px;
-  }
+.back-link{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:9px 16px;
+  border-radius:40px;
+  background:#eef8ea;
+  border:1px solid var(--border);
+  color:var(--ink);
+  font-size:13px;
+  font-weight:700;
+  text-decoration:none;
+  transition:.18s;
+}
 
-  .day-card {
-    background: #f8faf7;
-    border: 1px solid #a8ca88;
-    border-radius: 18px;
-    padding: 18px;
-  }
+.back-link:hover{
+  border-color:var(--bright);
+  color:var(--leaf);
+  transform:translateX(-2px);
+}
 
-  .events-count {
-    display: inline-flex;
-    margin-bottom: 14px;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: #dff1d7;
-    color: #2f6b28;
-    font-size: 13px;
-    font-weight: 700;
-  }
+.day-date{
+  font-size:28px;
+  font-weight:800;
+  color:var(--ink);
+  line-height:1.1;
+}
 
-  .event-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+.day-weekday{
+  font-size:14px;
+  color:var(--soft);
+  margin-top:4px;
+  font-weight:500;
+}
 
-  .day-event {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    background: #ffffff;
-    border: 1px solid #d7e6d0;
-    border-radius: 16px;
-    padding: 14px 16px;
-    text-decoration: none;
-    color: inherit;
-    transition: 0.2s;
-  }
+.today-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:4px 11px;
+  border-radius:20px;
+  background:#dff1d7;
+  color:#2f6b28;
+  font-size:11px;
+  font-weight:800;
+  margin-left:8px;
+  vertical-align:middle;
+}
 
-  .day-event:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(32, 70, 55, 0.08);
-  }
+.summary-strip{
+  display:flex;
+  gap:10px;
+  margin-bottom:22px;
+  flex-wrap:wrap;
+}
 
-  .event-time {
-    min-width: 70px;
-    text-align: center;
-  }
+.sum-chip{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:9px 16px;
+  border-radius:40px;
+  background:var(--card);
+  border:1px solid #d7e6d0;
+  font-size:13px;
+  font-weight:700;
+  color:var(--soft);
+}
 
-  .event-hour {
-    font-size: 18px;
-    font-weight: 800;
-    color: #204637;
-  }
+.sum-chip-ico{
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+}
 
-  .event-small {
-    font-size: 11px;
-    color: #5c7560;
-  }
+.sum-chip-num{
+  font-size:16px;
+  font-weight:800;
+  color:var(--ink);
+}
 
-  .event-divider {
-    width: 1px;
-    height: 42px;
-    background: #d7e6d0;
-  }
+.section-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:12px;
+  margin-top:8px;
+}
 
-  .event-main {
-    flex: 1;
-  }
+.sec-icon{
+  width:32px;
+  height:32px;
+  border-radius:9px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:15px;
+  flex-shrink:0;
+}
 
-  .event-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #204637;
-    margin-bottom: 4px;
-  }
+.sec-title{
+  font-size:16px;
+  font-weight:800;
+  color:var(--ink);
+}
 
-  .event-meta {
-    font-size: 13px;
-    color: #5c7560;
-  }
+.sec-count{
+  margin-left:auto;
+  font-size:11px;
+  font-weight:800;
+  padding:3px 10px;
+  border-radius:20px;
+}
 
-  .event-type {
-    padding: 6px 11px;
-    border-radius: 999px;
-    background: #eef3ec;
-    color: #4d6951;
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-  }
+.lesson-list,
+.hw-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
 
-  .empty-day {
-    padding: 28px;
-    border-radius: 16px;
-    background: #ffffff;
-    border: 1px dashed #a8ca88;
-    text-align: center;
-    color: #5c7560;
-    font-size: 15px;
-  }
+.lesson-list{
+  margin-bottom:24px;
+}
+
+.lesson-card{
+  display:flex;
+  align-items:stretch;
+  background:var(--card);
+  border:1px solid #d7e6d0;
+  border-left:4px solid #d7e6d0;
+  border-radius:20px;
+  overflow:hidden;
+  text-decoration:none;
+  color:inherit;
+  transition:.18s;
+}
+
+.lesson-card:hover,
+.hw-card:hover{
+  border-color:var(--bright);
+  box-shadow:0 6px 20px rgba(32,70,55,.09);
+  transform:translateY(-2px);
+}
+
+.lc-time{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:15px 18px;
+  min-width:82px;
+  border-right:1px solid #d7e6d0;
+  background:#f3f5f1;
+  gap:3px;
+}
+
+.lc-tv{
+  font-size:17px;
+  font-weight:800;
+  color:var(--ink);
+  line-height:1;
+}
+
+.lc-tl{
+  font-size:10px;
+  color:var(--soft);
+  font-weight:700;
+  text-transform:uppercase;
+}
+
+.lc-td{
+  font-size:11px;
+  color:var(--soft);
+  margin-top:4px;
+}
+
+.lc-body{
+  flex:1;
+  padding:14px 18px;
+  min-width:0;
+}
+
+.lc-title{
+  font-size:15px;
+  font-weight:800;
+  color:var(--ink);
+  margin-bottom:5px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.lc-meta{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  font-size:12px;
+  color:var(--soft);
+}
+
+.lc-dot,
+.hw-meta-dot{
+  width:3px;
+  height:3px;
+  border-radius:50%;
+  background:#d7e6d0;
+}
+
+.lc-subj{
+  display:inline-flex;
+  font-size:11px;
+  font-weight:700;
+  padding:3px 9px;
+  border-radius:20px;
+  background:#eef2ec;
+  color:var(--soft);
+}
+
+.lc-right{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:14px 18px;
+  flex-shrink:0;
+}
+
+.spill{
+  font-size:11px;
+  font-weight:800;
+  padding:5px 12px;
+  border-radius:20px;
+  white-space:nowrap;
+  background:#eef2ec;
+  color:var(--soft);
+}
+
+.divider{
+  height:1px;
+  background:#d7e6d0;
+  margin:22px 0;
+}
+
+.hw-card{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  background:var(--card);
+  border:1px solid #d7e6d0;
+  border-left:4px solid var(--amber);
+  border-radius:20px;
+  padding:14px 18px;
+  text-decoration:none;
+  color:inherit;
+  transition:.18s;
+}
+
+.hw-card.checked{
+  border-left-color:#1fa06d;
+}
+
+.hw-card.submitted{
+  border-left-color:#8b5cf6;
+}
+
+.hw-card.late{
+  border-left-color:var(--red);
+}
+
+.hw-ico{
+  width:42px;
+  height:42px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:19px;
+  flex-shrink:0;
+  background:#fff1cc;
+}
+
+.hw-body{
+  flex:1;
+  min-width:0;
+}
+
+.hw-title{
+  font-size:15px;
+  font-weight:800;
+  color:var(--ink);
+  margin-bottom:4px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.hw-meta{
+  font-size:12px;
+  color:var(--soft);
+  display:flex;
+  align-items:center;
+  gap:7px;
+  flex-wrap:wrap;
+}
+
+.hw-status{
+  font-size:11px;
+  font-weight:800;
+  padding:5px 12px;
+  border-radius:20px;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+
+.hws-assigned{
+  background:#fef9c3;
+  color:#854d0e;
+}
+
+.hws-submitted{
+  background:#ede9fe;
+  color:#5b21b6;
+}
+
+.hws-checked{
+  background:#dcfce7;
+  color:#166534;
+}
+
+.hws-late{
+  background:#fee2e2;
+  color:#991b1b;
+}
+
+.hw-arrow{
+  color:#a8ca88;
+  font-size:20px;
+  flex-shrink:0;
+}
+
+.empty-block{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:28px 20px;
+  background:#ffffff;
+  border:1.5px dashed #a8ca88;
+  border-radius:20px;
+  gap:8px;
+  color:var(--soft);
+  font-size:14px;
+  font-weight:600;
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="day-page">
+<div class="day-wrap">
 
- <div class="day-top">
-  <a href="{% url 'calendar' %}" class="back-btn">← До календаря</a>
+  <div class="day-nav">
+    <a class="back-link" href="{% url 'calendar' %}">
+      ← Календар
+    </a>
 
-  <div class="day-title-block">
-    <h1 class="day-title">{{ selected_date|date:"d.m.Y" }}</h1>
-    <p class="day-subtitle">Заняття на цей день</p>
+    <div>
+      <div class="day-date">
+        {{ selected_date.day }} {{ month_name }} {{ selected_date.year }}
+
+        {% if is_today %}
+          <span class="today-badge">● Сьогодні</span>
+        {% endif %}
+      </div>
+
+      <div class="day-weekday">
+        {{ weekday_name }}
+      </div>
+    </div>
   </div>
-</div>
 
-  <div class="day-card">
-    <div class="events-count">
-      {% with count=events|length %}
-  {{ count }}
-  {% if count == 1 %}
-    заняття
-  {% elif count < 5 %}
-    заняття
-  {% else %}
-    занять
-  {% endif %}
-{% endwith %}
+  <div class="summary-strip">
+    <div class="sum-chip">
+      <div class="sum-chip-ico" style="background:#eef2ec;">📅</div>
+      <span class="sum-chip-num">{{ events|length }}</span>
+      <span>уроки</span>
     </div>
 
-    <div class="event-list">
-      {% for event in events %}
-        <a href="{% url 'lesson_detail' event.id %}" class="day-event">
-          <div class="event-time">
-            <div class="event-hour">{{ event.start_time|time:"H:i" }}</div>
-            <div class="event-small">урок</div>
-          </div>
+    <div class="sum-chip">
+      <div class="sum-chip-ico" style="background:#fff1cc;">📝</div>
+      <span class="sum-chip-num">{{ homeworks|length }}</span>
+      <span>завдання</span>
+    </div>
 
-          <div class="event-divider"></div>
+    {% if late_homeworks_count %}
+      <div class="sum-chip">
+        <div class="sum-chip-ico" style="background:#fee2e2;">⚠️</div>
+        <span class="sum-chip-num" style="color:#dd5955;">{{ late_homeworks_count }}</span>
+        <span style="color:#dd5955;">прострочено</span>
+      </div>
+    {% endif %}
+  </div>
 
-          <div class="event-main">
-            <div class="event-title">{{ event.title }}</div>
+  <div class="section-head">
+    <div class="sec-icon" style="background:#eef2ec;">📅</div>
+    <div class="sec-title">Уроки</div>
+    <div class="sec-count" style="background:#eef2ec;color:#5c7560;">
+      {{ events|length }}
+    </div>
+  </div>
 
-            <div class="event-meta">
-              {% if event.student %}
-                Учень: {{ event.student.first_name }} {{ event.student.last_name }}
-              {% elif event.teacher %}
-                Вчитель: {{ event.teacher.first_name }} {{ event.teacher.last_name }}
-              {% endif %}
+  <div class="lesson-list">
+    {% for event in events %}
+      <a href="{% url 'lesson_detail' event.id %}" class="lesson-card">
+        <div class="lc-time">
+          <div class="lc-tv">{{ event.start_time|time:"H:i" }}</div>
+          <div class="lc-tl">урок</div>
+
+          {% if event.end_time %}
+            <div class="lc-td">
+              до {{ event.end_time|time:"H:i" }}
             </div>
-          </div>
-
-          <span class="event-type">
-            {{ event.get_event_type_display }}
-          </span>
-
-      </a>
-      {% empty %}
-        <div class="empty-day">
-          На цей день занятть немає.
+          {% endif %}
         </div>
-      {% endfor %}
+
+        <div class="lc-body">
+          <div class="lc-title">{{ event.title }}</div>
+
+          <div class="lc-meta">
+            {% if event.student and event.student != request.user %}
+              <span>Учень: {{ event.student.first_name }} {{ event.student.last_name }}</span>
+            {% elif event.teacher and event.teacher != request.user %}
+              <span>Вчитель: {{ event.teacher.first_name }} {{ event.teacher.last_name }}</span>
+            {% endif %}
+
+            <span class="lc-dot"></span>
+            <span class="lc-subj">{{ event.get_event_type_display }}</span>
+          </div>
+        </div>
+
+        <div class="lc-right">
+          <span class="spill">Деталі</span>
+        </div>
+      </a>
+    {% empty %}
+      <div class="empty-block">
+        <div></div>
+        <div>Уроків на цей день немає</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-head">
+    <div class="sec-icon" style="background:#fff1cc;">📝</div>
+    <div class="sec-title">Домашні завдання</div>
+    <div class="sec-count" style="background:#fff1cc;color:#9a640e;">
+      {{ homeworks|length }}
     </div>
+  </div>
+
+  <div class="hw-list">
+    {% for hw in homeworks %}
+      <a href="{% url 'homework_detail' hw.id %}" class="hw-card {{ hw.status }}">
+        <div class="hw-ico">
+          📝
+        </div>
+
+        <div class="hw-body">
+          <div class="hw-title">{{ hw.title }}</div>
+
+          <div class="hw-meta">
+            {% if hw.topic %}
+              <span>{{ hw.topic }}</span>
+              <span class="hw-meta-dot"></span>
+            {% endif %}
+
+            {% if hw.student and hw.student != request.user %}
+              <span>{{ hw.student.first_name }} {{ hw.student.last_name }}</span>
+            {% elif hw.teacher and hw.teacher != request.user %}
+              <span>{{ hw.teacher.first_name }} {{ hw.teacher.last_name }}</span>
+            {% endif %}
+
+            {% if hw.deadline %}
+              <span class="hw-meta-dot"></span>
+              <span>до {{ hw.deadline|time:"H:i" }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if hw.status == "assigned" %}
+  <span class="hw-status hws-assigned">Здати</span>
+
+{% elif hw.status == "submitted" %}
+  {% if request.user == hw.teacher %}
+    <span class="hw-status hws-submitted">Перевірити</span>
+  {% else %}
+    <span class="hw-status hws-submitted">Здано</span>
+  {% endif %}
+
+{% elif hw.status == "checked" %}
+  <span class="hw-status hws-checked">Перевірено</span>
+
+{% elif hw.status == "late" %}
+  <span class="hw-status hws-late">Прострочено</span>
+{% endif %}
+
+        <span class="hw-arrow">›</span>
+      </a>
+    {% empty %}
+      <div class="empty-block">
+        <div></div>
+        <div>Домашніх завдань на цей день немає</div>
+      </div>
+    {% endfor %}
   </div>
 
 </div>

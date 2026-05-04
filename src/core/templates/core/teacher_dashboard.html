@@ -105,17 +105,19 @@
   }
 
   .quick-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 18px;
-  }
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 28px;
+}
 
 
   .content-grid {
-    display: grid;
-    grid-template-columns: 1.35fr 0.85fr;
-    gap: 22px;
-  }
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 28px;
+  align-items: stretch;
+}
+
 
   .bottom-card {
     background: #fff;
@@ -346,6 +348,71 @@
 .student-email-input:focus {
   border-color: #7fac57;
 }
+.unchecked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.unchecked-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  min-height: 72px;
+  border-radius: 22px;
+  background: #f8faf7;
+  border: 1px solid #dfe8dd;
+  text-decoration: none;
+  color: #0b2f25;
+  transition: 0.2s ease;
+}
+
+.unchecked-row:hover {
+  background: #eef6f1;
+  border-color: #b7d7c4;
+  transform: translateY(-1px);
+}
+
+.unchecked-icon {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 16px;
+  background: #d8f1eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+}
+
+.unchecked-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.unchecked-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #07382d;
+}
+
+.unchecked-student {
+  font-size: 16px;
+  color: #315b4d;
+}
+
+.unchecked-date {
+  font-size: 14px;
+  color: #7a9289;
+}
+
+.empty-text {
+  margin: 36px 0 22px;
+  font-size: 18px;
+  color: #0b2f25;
+}
 
 @media (max-width: 640px) {
   .student-email-form {
@@ -548,57 +615,74 @@
     </a>
   </div>
 </div>
-    </section>
+      </section>
+      <section class="content-grid">
+  <div class="card">
+    <div class="section-head">
+      <h3>Розклад на сьогодні</h3>
+      <a href="{% url 'calendar' %}" class="section-link">Весь розклад →</a>
+    </div>
 
-    <section class="content-grid">
-      <div class="card">
-        <div class="section-head">
-          <h3>Розклад на сьогодні</h3>
-          <a href="{% url 'calendar' %}" class="section-link">
-            Весь розклад →
-          </a>
-        </div>
+    <div class="schedule-list">
+      {% for lesson in today_lessons %}
+        <a href="{% url 'lesson_detail' lesson.id %}" class="schedule-item">
+          <div class="schedule-left">
+            <div class="time">{{ lesson.start_time|time:"H:i" }}</div>
 
-        <div class="schedule-list">
-          {% for lesson in today_lessons %}
-            <a href="{% url 'lesson_detail' lesson.id %}" class="schedule-item">
-              <div class="schedule-left">
-                <div class="time">
-                  {{ lesson.start_time|time:"H:i" }}
-                </div>
-                <div>
-                  <div class="item-title">
-                    {{ lesson.student.first_name }} {{ lesson.student.last_name }}
-                  </div>
-                  <div class="item-subtitle">
-                    {{ lesson.title|default:"Урок" }}
-                  </div>
-                </div>
+            <div>
+              <div class="item-title">
+                {{ lesson.student.first_name }} {{ lesson.student.last_name }}
               </div>
-
-              {% if lesson.start_time < now %}
-                <span class="pill pill-done">Завершено</span>
-              {% else %}
-                <span class="pill pill-planned">Заплановано</span>
-              {% endif %}
+              <div class="item-subtitle">
+                {{ lesson.title|default:"Урок" }}
+              </div>
             </div>
-          {% empty %}
-            <p class="empty-text">Сьогодні немає уроків</p>
+          </div>
+
+          {% if lesson.start_time < now %}
+            <span class="pill pill-done">Завершено</span>
+          {% else %}
+            <span class="pill pill-planned">Заплановано</span>
+          {% endif %}
         </a>
-          {% endfor %}
-        </div>
+      {% empty %}
+        <p class="empty-text">Сьогодні немає уроків</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-head">
+      <h3>Завдання без перевірки</h3>
+      <a href="{% url 'homework' %}" class="section-link">Всі →</a>
+    </div>
+
+    {% if unchecked_homeworks %}
+      <div class="unchecked-list">
+        {% for submission in unchecked_homeworks %}
+          <a href="{% url 'homework_detail' submission.homework.id %}" class="unchecked-row">
+            <div class="unchecked-icon">📘</div>
+
+            <div class="unchecked-content">
+              <div class="unchecked-title">{{ submission.homework.title }}</div>
+              <div class="unchecked-student">
+                {{ submission.student.first_name }} {{ submission.student.last_name }}
+              </div>
+              <div class="unchecked-date">
+                Здано {{ submission.submitted_at|date:"d.m.Y H:i" }}
+              </div>
+            </div>
+          </a>
+        {% endfor %}
       </div>
-
-      <div class="card">
-        <div class="section-head">
-          <h3>Завдання без перевірки</h3>
-          <a href="#" class="section-link">Всі →</a>
-        </div>
-
+    {% else %}
+      <p class="empty-text">Немає завдань без перевірки</p>
+    {% endif %}
+  </div>
+</section>
 
 
-      </div>
-    </section>
+
   </main>
 </div>
 <script>

@@ -234,7 +234,7 @@
     text-align: center;
   }
 
-  .avatar {
+  .person-avatar {
     width: 54px;
     height: 54px;
     margin: 0 auto 10px;
@@ -366,7 +366,7 @@
           <span>👩‍🎓 {{ lesson.student.first_name }} {{ lesson.student.last_name }}</span>
         {% endif %}
 
-        <span class="subject-tag">📐 Математика</span>
+        <span class="subject-tag"> Математика</span>
       </div>
     </section>
 
@@ -438,25 +438,39 @@
       </div>
 
       <aside class="right-col">
-        <section class="person-card">
-          <div class="avatar">
-            {% if lesson.student %}
-              {{ lesson.student.first_name|first }}{{ lesson.student.last_name|first }}
-            {% else %}
-              ?
-            {% endif %}
-          </div>
+       <section class="person-card">
 
-          <div class="person-name">
-            {% if lesson.student %}
-              {{ lesson.student.first_name }} {{ lesson.student.last_name }}
-            {% else %}
-              Учень не вказаний
-            {% endif %}
-          </div>
+  {% if student_profile %}
+    <a href="{% url 'student_public_profile' student_profile.id %}" class="person-link">
+  {% else %}
+    <div class="person-link">
+  {% endif %}
 
-          <div class="person-meta">Учень</div>
-        </section>
+      <div class="person-avatar">
+        {% if lesson.student %}
+          {{ lesson.student.first_name|first }}{{ lesson.student.last_name|first }}
+        {% else %}
+          ?
+        {% endif %}
+      </div>
+
+      <div class="person-name">
+        {% if lesson.student %}
+          {{ lesson.student.first_name }} {{ lesson.student.last_name }}
+        {% else %}
+          Учень не вказаний
+        {% endif %}
+      </div>
+
+      <div class="person-meta">Учень</div>
+
+  {% if student_profile %}
+    </a>
+  {% else %}
+    </div>
+  {% endif %}
+
+</section>
 
         <section class="lesson-card">
           <div class="card-title">Швидкі дії</div>
@@ -465,8 +479,13 @@
             {% if lesson.meeting_link %}
               <a href="{{ lesson.meeting_link }}" target="_blank" class="action-btn primary">▶ Почати урок</a>
             {% endif %}
-            <button class="action-btn"> Редагувати урок</button>
-            <button class="action-btn"> Додати домашнє завдання</button>
+            <a href="{% url 'edit_lesson' lesson.id %}" class="action-btn">
+              Редагувати урок
+            </a>
+
+            <a href="{% url 'create_homework' %}?lesson_id={{ lesson.id }}" class="action-btn">
+              Додати домашнє завдання
+            </a>
             <button class="action-btn"> Надіслати нагадування</button>
             <button class="action-btn"> Перенести урок</button>
             <button class="action-btn danger">✕ Скасувати урок</button>
@@ -611,24 +630,38 @@
 
       <aside class="right-col">
         <section class="person-card">
-          <div class="avatar">
-            {% if lesson.teacher %}
-              {{ lesson.teacher.first_name|first }}{{ lesson.teacher.last_name|first }}
-            {% else %}
-              ?
-            {% endif %}
-          </div>
 
-          <div class="person-name">
-            {% if lesson.teacher %}
-              {{ lesson.teacher.first_name }} {{ lesson.teacher.last_name }}
-            {% else %}
-              Вчитель не вказаний
-            {% endif %}
-          </div>
+  {% if teacher_profile %}
+    <a href="{% url 'teacher_public_profile' teacher_profile.id %}" class="person-link">
+  {% else %}
+    <div class="person-link">
+  {% endif %}
 
-          <div class="person-meta">Вчитель</div>
-        </section>
+      <div class="person-avatar">
+        {% if lesson.teacher %}
+          {{ lesson.teacher.first_name|first }}{{ lesson.teacher.last_name|first }}
+        {% else %}
+          ?
+        {% endif %}
+      </div>
+
+      <div class="person-name">
+        {% if lesson.teacher %}
+          {{ lesson.teacher.first_name }} {{ lesson.teacher.last_name }}
+        {% else %}
+          Вчитель не вказаний
+        {% endif %}
+      </div>
+
+      <div class="person-meta">Вчитель</div>
+
+  {% if teacher_profile %}
+    </a>
+  {% else %}
+    </div>
+  {% endif %}
+
+</section>
 
         <section class="lesson-card">
           <div class="card-title">Швидкі дії</div>
