@@ -32,6 +32,8 @@ urlpatterns = [
    # path("", views.landing, name="landing"),
     path("", views.home, name="home"),
     path("landing/", views.landing, name="landing"),
+    path("google/connect/", views.google_calendar_auth, name="google_calendar_auth"),
+    path("google/callback/", views.google_calendar_callback, name="google_calendar_callback"),
 ]
 
 

@@ -266,6 +266,44 @@
   height: calc(100vh - 80px);
   overflow: hidden;
 }
+
+.google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  margin-top: 14px;
+  padding: 12px;
+
+  border-radius: 12px;
+  border: 1px solid #a8ca88;
+
+  background: #ffffff;
+  color: #204637;
+
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+
+  transition: all 0.2s ease;
+}
+
+.google-btn:hover {
+  background: #f1f8ed;
+  transform: translateY(-1px);
+}
+
+/* зелений активний варіант */
+.google-btn.connected {
+  background: #23a272;
+  color: white;
+  border-color: #23a272;
+}
+
+.google-btn.connected:hover {
+  background: #1d8f64;
+}
   @media (max-width: 1100px) {
     .profile-grid {
       grid-template-columns: 1fr;
@@ -351,6 +389,11 @@
         </div>
       </div>
 
+      <a href="{% url 'google_calendar_auth' %}" class="google-btn">
+        <span>📅</span>
+        <span>Підключити Google Calendar</span>
+      </a>
+
       <div class="logout-wrap">
   <form method="post" action="{% url 'account_logout' %}">
     {% csrf_token %}
@@ -359,6 +402,7 @@
     </button>
   </form>
 </div>
+
     </div>
     <div>
      <div class="card">

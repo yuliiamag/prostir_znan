@@ -13,7 +13,13 @@ import random
 import string
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
+import os
+from django.conf import settings
+from google_auth_oauthlib.flow import Flow
+from .google_calendar import credentials_to_dict, sync_lesson_to_google_calendar
 
+
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 def home(request):
     if not request.user.is_authenticated:
         return redirect("landing")
@@ -500,9 +506,9 @@ def create_lesson(request, lesson_id=None):
                     f'{form_data["lesson_date"]} {form_data["lesson_time"]}',
                     "%Y-%m-%d %H:%M"
                 )
-
                 end_dt = start_dt + timedelta(minutes=duration_minutes)
-
+                start_dt = timezone.make_aware(start_dt)
+                end_dt = timezone.make_aware(end_dt)
                 if is_edit:
                     lesson.title = form_data["topic"]
                     lesson.event_type = "lesson"
@@ -528,6 +534,8 @@ def create_lesson(request, lesson_id=None):
                         teacher=request.user,
                         student=selected_student.user,
                     )
+                    if request.session.get("google_credentials"):
+                        sync_lesson_to_google_calendar(request, lesson)
 
                     weekday_map = {
                         "mon": 0,
@@ -554,19 +562,24 @@ def create_lesson(request, lesson_id=None):
                                 days_ahead = 7
 
                             first_repeat_start = start_dt + timedelta(days=days_ahead)
-                            first_repeat_end = end_dt + timedelta(days=days_ahead)
 
                             for i in range(8):
-                                CalendarEvent.objects.create(
+                                repeat_start = first_repeat_start + timedelta(days=7 * i)
+                                repeat_end = repeat_start + timedelta(minutes=duration_minutes)
+
+                                repeat_lesson = CalendarEvent.objects.create(
                                     title=form_data["topic"],
                                     event_type="lesson",
                                     description=form_data["description"] or "",
                                     meeting_link=form_data["meeting_link"] or "",
-                                    start_time=first_repeat_start + timedelta(days=7 * i),
-                                    end_time=first_repeat_end + timedelta(days=7 * i),
+                                    start_time=repeat_start,
+                                    end_time=repeat_end,
                                     teacher=request.user,
                                     student=selected_student.user,
                                 )
+
+                                if request.session.get("google_credentials"):
+                                    sync_lesson_to_google_calendar(request, repeat_lesson)
 
                     return redirect("lesson_detail", lesson_id=lesson.id)
 
@@ -1082,3 +1095,81 @@ def landing(request):
         return redirect("dashboard")
 
     return render(request, "landing.html")
+
+
+@login_required
+def google_calendar_auth(request):
+    credentials_path = os.path.abspath(
+        os.path.join(settings.BASE_DIR, "..", "credentials.json")
+    )
+
+    flow = Flow.from_client_secrets_file(
+        credentials_path,
+        scopes=["https://www.googleapis.com/auth/calendar"],
+        autogenerate_code_verifier=True,
+    )
+
+    flow.redirect_uri = "http://127.0.0.1:8000/google/callback/"
+
+    authorization_url, state = flow.authorization_url(
+        access_type="offline",
+        include_granted_scopes="true",
+        prompt="consent",
+    )
+
+    request.session["google_oauth_state"] = state
+    request.session["google_code_verifier"] = flow.code_verifier
+
+    return redirect(authorization_url)
+
+
+@login_required
+def google_calendar_callback(request):
+    credentials_path = os.path.abspath(
+        os.path.join(settings.BASE_DIR, "..", "credentials.json")
+    )
+
+    state = request.session.get("google_oauth_state")
+    code_verifier = request.session.get("google_code_verifier")
+
+    flow = Flow.from_client_secrets_file(
+        credentials_path,
+        scopes=["https://www.googleapis.com/auth/calendar"],
+        state=state,
+        code_verifier=code_verifier,
+    )
+
+    flow.redirect_uri = "http://127.0.0.1:8000/google/callback/"
+
+    flow.fetch_token(
+        authorization_response=request.build_absolute_uri()
+    )
+
+    credentials = flow.credentials
+    request.session["google_credentials"] = credentials_to_dict(credentials)
+
+    sync_user_lessons_after_google_connect(request)
+
+    return redirect("dashboard")
+
+
+def sync_user_lessons_after_google_connect(request):
+    if hasattr(request.user, "teacher_profile"):
+        lessons = CalendarEvent.objects.filter(
+            teacher=request.user,
+            event_type="lesson",
+            is_cancelled=False,
+        )
+
+    elif hasattr(request.user, "student_profile"):
+        lessons = CalendarEvent.objects.filter(
+            student=request.user,
+            event_type="lesson",
+            is_cancelled=False,
+        )
+
+    else:
+        return
+
+    for lesson in lessons:
+        sync_lesson_to_google_calendar(request, lesson)
