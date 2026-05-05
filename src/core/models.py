@@ -73,6 +73,8 @@ class CalendarEvent(models.Model):
     end_time = models.DateTimeField(null=True, blank=True)
     meeting_link = models.URLField(blank=True)
     is_cancelled = models.BooleanField(default=False)
+    google_event_id = models.CharField(max_length=255, blank=True, null=True)
+    is_synced_with_google = models.BooleanField(default=False)
 
     teacher = models.ForeignKey(
         settings.AUTH_USER_MODEL,
