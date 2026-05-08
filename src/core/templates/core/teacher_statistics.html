@@ -1,0 +1,539 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+.statistics-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 18px 40px;
+  color: #204637;
+}
+
+.stats-header {
+  background: #0c5f4f;
+  color: white;
+  border-radius: 24px;
+  padding: 28px 32px;
+  margin-bottom: 22px;
+}
+
+.stats-header h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.stats-header p {
+  margin: 8px 0 0;
+  color: rgba(255,255,255,.78);
+  font-size: 15px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.stat-card {
+  background: #f8faf7;
+  border: 1px solid #a8ca88;
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #5c7560;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 34px;
+  font-weight: 800;
+  color: #0c5f4f;
+  line-height: 1;
+}
+
+.stat-note {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6d806d;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 24px 0 14px;
+  color: #204637;
+}
+
+.analytics-row {
+  display: grid;
+  grid-template-columns: 1.4fr .9fr;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.panel {
+  background: white;
+  border: 1px solid #d7e5c6;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 12px 30px rgba(32,70,55,.06);
+}
+
+.panel h3 {
+  margin: 0 0 16px;
+  color: #204637;
+  font-size: 18px;
+}
+
+.progress-box {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.progress-item {
+  display: grid;
+  grid-template-columns: 140px 1fr 48px;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-name {
+  font-size: 14px;
+  color: #426050;
+  font-weight: 700;
+}
+
+.progress-line {
+  height: 9px;
+  background: #edf3e8;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #0c5f4f;
+  border-radius: 999px;
+}
+
+.progress-value {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0c5f4f;
+  text-align: right;
+}
+
+.hw-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.hw-mini {
+  background: #f3f5f1;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.hw-mini strong {
+  display: block;
+  font-size: 26px;
+  color: #0c5f4f;
+}
+
+.hw-mini span {
+  font-size: 13px;
+  color: #5c7560;
+}
+
+.students-table {
+  background: white;
+  border: 1px solid #d7e5c6;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(32,70,55,.06);
+}
+
+.table-head,
+.table-row {
+  display: grid;
+  grid-template-columns: 1.5fr .8fr 1fr 1fr 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 15px 20px;
+}
+
+.table-head {
+  background: #eef2ec;
+  font-size: 12px;
+  font-weight: 800;
+  color: #5c7560;
+  text-transform: uppercase;
+}
+
+.table-row {
+  border-top: 1px solid #edf3e8;
+}
+
+.student-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #dfeadb;
+  color: #0c5f4f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.student-name {
+  font-weight: 800;
+  color: #204637;
+}
+
+.student-email {
+  font-size: 12px;
+  color: #6d806d;
+}
+
+.badge {
+  display: inline-flex;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.badge.green {
+  background: #e3f4e7;
+  color: #16804d;
+}
+
+.badge.amber {
+  background: #fff3d8;
+  color: #9a6700;
+}
+
+.badge.red {
+  background: #ffe5e5;
+  color: #bb2f2f;
+}
+
+.empty-state {
+  padding: 30px;
+  text-align: center;
+  color: #6d806d;
+}
+.period-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e8efe6;
+  border: 1px solid #d4e2cf;
+  border-radius: 16px;
+  padding: 6px;
+  margin-top: 20px;
+}
+
+.period-tab {
+  padding: 11px 22px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #5c7560;
+  transition: 0.2s;
+}
+
+.period-tab:hover {
+  background: rgba(12, 95, 79, 0.08);
+  color: #0c5f4f;
+}
+
+.period-tab.active {
+  background: #37ef91;
+  color: #083827;
+}
+.chart-card {
+  background: #f8faf7;
+  border: 1px solid #d7e5c6;
+  border-radius: 22px;
+  padding: 22px;
+}
+
+.chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.chart-head h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #204637;
+}
+
+.chart-head span {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6d806d;
+}
+
+.bar-chart {
+  height: 180px;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bar-wrap {
+  height: 140px;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.bar-fill {
+  width: 100%;
+  min-height: 5px;
+  background: #0c5f4f;
+  border-radius: 8px 8px 0 0;
+}
+
+.bar-label {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5c7560;
+}
+@media (max-width: 900px) {
+  .stats-grid,
+  .analytics-row {
+    grid-template-columns: 1fr;
+  }
+
+  .table-head {
+    display: none;
+  }
+
+  .table-row {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<div class="statistics-page">
+
+  <section class="stats-header">
+    <h1>Статистика навчання</h1>
+  </section>
+
+  <div class="period-tabs">
+  <a href="?period=week" class="period-tab {% if period == 'week' %}active{% endif %}">
+    Тиждень
+  </a>
+
+  <a href="?period=month" class="period-tab {% if period == 'month' %}active{% endif %}">
+    Місяць
+  </a>
+
+  <a href="?period=year" class="period-tab {% if period == 'year' %}active{% endif %}">
+    Рік
+  </a>
+
+  <a href="?period=all" class="period-tab {% if period == 'all' %}active{% endif %}">
+    Весь час
+  </a>
+</div>
+
+  <section class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Уроків проведено</div>
+      <div class="stat-value">{{ month_lessons_count }}</div>
+      <div class="stat-note">за цей місяць</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Годин навчання</div>
+      <div class="stat-value">{{ total_hours }}</div>
+      <div class="stat-note">сумарна тривалість уроків</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Домашніх завдань</div>
+      <div class="stat-value">{{ hw_total }}</div>
+      <div class="stat-note">{{ hw_percent }}% вже здано</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Не здали вчасно</div>
+      <div class="stat-value">{{ hw_late }}</div>
+      <div class="stat-note">потребують уваги</div>
+    </div>
+  </section>
+
+  <div class="analytics-row">
+    <section class="panel">
+      <h3>Виконання домашніх завдань</h3>
+
+      <div class="progress-box">
+        <div class="progress-item">
+          <div class="progress-name">Здано</div>
+          <div class="progress-line">
+            <div class="progress-fill" style="width: {{ hw_percent }}%;"></div>
+          </div>
+          <div class="progress-value">{{ hw_percent }}%</div>
+        </div>
+
+        <div class="progress-item">
+          <div class="progress-name">Перевірено</div>
+          <div class="progress-line">
+            <div class="progress-fill" style="width: {% if hw_total %}{% widthratio hw_checked hw_total 100 %}{% else %}0{% endif %}%;"></div>
+          </div>
+          <div class="progress-value">
+            {% if hw_total %}{% widthratio hw_checked hw_total 100 %}{% else %}0{% endif %}%
+          </div>
+        </div>
+
+        <div class="progress-item">
+          <div class="progress-name">Прострочено</div>
+          <div class="progress-line">
+            <div class="progress-fill" style="width: {% if hw_total %}{% widthratio hw_late hw_total 100 %}{% else %}0{% endif %}%; background:#d95f59;"></div>
+          </div>
+          <div class="progress-value">
+            {% if hw_total %}{% widthratio hw_late hw_total 100 %}{% else %}0{% endif %}%
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>Домашні завдання</h3>
+
+      <div class="hw-mini-grid">
+        <div class="hw-mini">
+          <strong>{{ hw_submitted }}</strong>
+          <span>здано</span>
+        </div>
+
+        <div class="hw-mini">
+          <strong>{{ hw_checked }}</strong>
+          <span>перевірено</span>
+        </div>
+
+        <div class="hw-mini">
+          <strong>{{ hw_need_check }}</strong>
+          <span>очікують перевірки</span>
+        </div>
+
+        <div class="hw-mini">
+          <strong>{{ hw_late }}</strong>
+          <span>прострочено</span>
+        </div>
+      </div>
+    </section>
+  </div>
+  <section class="chart-card">
+  <div class="chart-head">
+    <h3>Уроки</h3>
+    <span>{{ period_label }}</span>
+  </div>
+
+  <div class="bar-chart">
+    {% for item in chart_data %}
+      <div class="bar-item">
+        <div class="bar-wrap">
+          <div
+            class="bar-fill"
+            style="height: {{ item.height }}%;"
+            title="{{ item.value }} уроків">
+          </div>
+        </div>
+        <div class="bar-label">{{ item.label }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+  <h2 class="section-title">Статистика по учнях</h2>
+
+  <section class="students-table">
+  <div class="table-head">
+    <div>Учень</div>
+    <div>Уроків</div>
+    <div>Здача ДЗ</div>
+    <div>Останній урок</div>
+    <div>Статус</div>
+  </div>
+
+  <div class="table-body">
+    {% for item in students_stats %}
+      <div class="table-row">
+        <div class="student-info">
+          <div class="avatar">
+            {{ item.student.first_name|slice:":1" }}{{ item.student.last_name|slice:":1" }}
+          </div>
+          <div>
+            <div class="student-name">
+              {{ item.student.first_name }} {{ item.student.last_name }}
+            </div>
+            <div class="student-email">{{ item.student.email }}</div>
+          </div>
+        </div>
+
+        <div>{{ item.lessons_count }}</div>
+
+        <div>
+          <span class="badge {% if item.homework_percent >= 85 %}green{% elif item.homework_percent >= 60 %}amber{% else %}red{% endif %}">
+            {{ item.homework_percent }}%
+          </span>
+        </div>
+
+        <div>
+          {% if item.last_lesson %}
+            {{ item.last_lesson.start_time|date:"d.m.Y" }}
+          {% else %}
+            ще не було
+          {% endif %}
+        </div>
+
+        <div>
+          <span class="badge {{ item.status_class }}">
+            {{ item.status }}
+          </span>
+        </div>
+       </div>
+    {% empty %}
+      <div class="empty-state">
+        Поки немає учнів для відображення статистики.
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+</div>
+{% endblock %}

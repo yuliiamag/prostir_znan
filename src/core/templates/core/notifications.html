@@ -1,0 +1,580 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="notifications-page">
+
+  <section class="notif-hero">
+    <div>
+      <h1>Мої <span>сповіщення</span></h1>
+
+      <div class="notif-stats">
+        <div class="notif-pill unread-pill">
+          <span></span>
+          {{ unread_count }} непрочитані
+        </div>
+        <div class="notif-pill">
+          {{ total_count }} всього
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="notif-filters">
+    <button class="notif-filter active" data-filter="all">Всі</button>
+    <button class="notif-filter" data-filter="unread">Непрочитані</button>
+    <button class="notif-filter" data-filter="lesson">📅 Уроки</button>
+    <button class="notif-filter" data-filter="homework">📝 Завдання</button>
+    <button class="notif-filter" data-filter="message">💬 Повідомлення</button>
+
+
+  </div>
+
+  <div class="notifications-list">
+
+    {% regroup notifications by created_at.date as notification_groups %}
+
+    {% for group in notification_groups %}
+      <div class="notif-date-group">
+
+        <div class="notif-date-label">
+          {% if group.grouper == today %}
+            Сьогодні
+          {% elif group.grouper == yesterday %}
+            Вчора
+          {% else %}
+            {{ group.grouper|date:"d.m.Y" }}
+          {% endif %}
+        </div>
+
+        {% for n in group.list %}
+          <a href="{{ n.link|default:'#' }}"
+             class="notif-card {% if not n.is_read %}unread{% endif %}"
+             data-id="{{ n.id }}"
+             data-type="{{ n.notification_type }}"
+             data-read="{% if n.is_read %}read{% else %}unread{% endif %}">
+
+            <div class="notif-icon
+              {% if n.notification_type == 'lesson' %}lesson
+              {% elif n.notification_type == 'homework' %}homework
+              {% elif n.notification_type == 'message' %}message
+              {% elif n.notification_type == 'important' %}important
+              {% else %}system
+              {% endif %}">
+
+              {% if n.notification_type == 'lesson' %}
+                📅
+              {% elif n.notification_type == 'homework' %}
+                📝
+              {% elif n.notification_type == 'message' %}
+                💬
+              {% elif n.notification_type == 'important' %}
+                ⚠️
+              {% else %}
+                🔔
+              {% endif %}
+            </div>
+
+            <div class="notif-body">
+              <div class="notif-title">{{ n.title }}</div>
+              <div class="notif-message">{{ n.message }}</div>
+
+              <div class="notif-footer">
+                <span>{{ n.created_at|date:"H:i" }}</span>
+
+                <span class="notif-tag
+                  {% if n.notification_type == 'lesson' %}lesson
+                  {% elif n.notification_type == 'homework' %}homework
+                  {% elif n.notification_type == 'message' %}message
+                  {% elif n.notification_type == 'important' %}important
+                  {% else %}system
+                  {% endif %}">
+
+                  {% if n.notification_type == 'lesson' %}
+                    Урок
+                  {% elif n.notification_type == 'homework' %}
+                    Завдання
+                  {% elif n.notification_type == 'message' %}
+                    Повідомлення
+                  {% elif n.notification_type == 'important' %}
+                    Важливо
+                  {% else %}
+                    Система
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+
+            <div class="notif-right">
+              {% if not n.is_read %}
+                <span class="unread-dot"></span>
+              {% else %}
+                <span class="read-text">прочитано</span>
+              {% endif %}
+
+              <span class="notif-action">
+                Відкрити
+              </span>
+            </div>
+          </a>
+        {% endfor %}
+
+      </div>
+    {% empty %}
+      <div class="notif-empty">
+        <div class="empty-icon">🔕</div>
+        <h3>Поки що немає сповіщень</h3>
+        <p>Тут будуть з’являтися нові уроки, домашні завдання, нагадування та повідомлення.</p>
+      </div>
+    {% endfor %}
+
+  </div>
+
+</div>
+
+<style>
+.notifications-page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 26px 18px 44px;
+}
+
+.notif-hero {
+  background: #0c5f4f;
+  color: white;
+  border-radius: 28px;
+  padding: 32px 34px;
+  margin-bottom: 18px;
+  box-shadow: 0 18px 45px rgba(12, 95, 79, .16);
+}
+
+.notif-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.68);
+  margin-bottom: 8px;
+}
+
+.notif-hero h1 {
+  margin: 0;
+  font-size: 38px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.notif-hero h1 span {
+  font-family: serif;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.notif-stats {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.notif-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.13);
+  border: 1px solid rgba(255,255,255,.18);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.unread-pill span {
+  width: 8px;
+  height: 8px;
+  background: #b8ff6b;
+  border-radius: 50%;
+}
+
+.notif-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.notif-filter,
+.mark-all-btn {
+  border: 1px solid #d8e8dc;
+  background: #ffffff;
+  color: #204637;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .2s ease;
+}
+
+.notif-filter:hover,
+.mark-all-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(32,70,55,.08);
+}
+
+.notif-filter.active {
+  background: #0c5f4f;
+  color: white;
+  border-color: #0c5f4f;
+}
+
+.notif-filter.important.active {
+  background: #e8524a;
+  border-color: #e8524a;
+}
+
+.mark-all-btn {
+  margin-left: auto;
+  background: #f3f8f4;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.notif-date-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #5a7a68;
+  margin-bottom: 10px;
+}
+
+.notif-date-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notif-card {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #d8e8dc;
+  border-radius: 22px;
+  padding: 15px 16px;
+  text-decoration: none;
+  color: #204637;
+  transition: .2s ease;
+  position: relative;
+}
+
+.notif-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 35px rgba(32,70,55,.09);
+}
+
+.notif-card.unread {
+  border-color: #a8ca88;
+  background: #fbfff8;
+}
+
+.notif-card.unread::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 4px;
+  border-radius: 0 8px 8px 0;
+  background: #0c5f4f;
+}
+
+.notif-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.notif-icon.lesson { background: #dcfce7; }
+.notif-icon.homework { background: #fef9c3; }
+.notif-icon.message { background: #ede9fe; }
+.notif-icon.important { background: #fee2e2; }
+.notif-icon.system { background: #e0f2fe; }
+
+.notif-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1a2820;
+  margin-bottom: 4px;
+}
+
+.notif-message {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #5a7a68;
+  max-width: 720px;
+}
+
+.notif-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  font-size: 12px;
+  color: #96b0a2;
+}
+
+.notif-tag {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.notif-tag.lesson {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.notif-tag.homework {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.notif-tag.message {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.notif-tag.important {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.notif-tag.system {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.notif-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 9px;
+  min-width: 104px;
+}
+
+.unread-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #0c5f4f;
+}
+
+.read-text {
+  font-size: 11px;
+  color: #96b0a2;
+}
+
+.notif-action {
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: #f3f8f4;
+  color: #204637;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.notif-card:hover .notif-action {
+  background: #0c5f4f;
+  color: white;
+}
+
+.notif-empty {
+  text-align: center;
+  background: white;
+  border: 1px dashed #a8ca88;
+  border-radius: 24px;
+  padding: 46px 20px;
+  color: #5a7a68;
+}
+
+.empty-icon {
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+
+.notif-empty h3 {
+  margin: 0 0 6px;
+  color: #204637;
+}
+
+.notif-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  .notif-hero {
+    padding: 26px 22px;
+  }
+
+  .notif-hero h1 {
+    font-size: 30px;
+  }
+
+  .mark-all-btn {
+    margin-left: 0;
+  }
+
+  .notif-card {
+    grid-template-columns: 44px 1fr;
+  }
+
+  .notif-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    font-size: 19px;
+  }
+
+  .notif-right {
+    grid-column: 2;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    min-width: auto;
+  }
+}
+</style>
+
+<script>
+const typeGroups = {
+  lesson: ["lesson_created"],
+  homework: [
+    "homework_created",
+    "homework_submitted",
+    "homework_checked"
+  ],
+  message: [],
+  important: []
+};
+
+document.querySelectorAll(".notif-filter").forEach(btn => {
+  btn.addEventListener("click", function () {
+    document.querySelectorAll(".notif-filter").forEach(b => b.classList.remove("active"));
+    this.classList.add("active");
+
+    const filter = this.dataset.filter;
+    const cards = document.querySelectorAll(".notif-card");
+
+    cards.forEach(card => {
+      const type = card.dataset.type;
+      const read = card.dataset.read;
+
+      let show = false;
+
+      if (filter === "all") {
+        show = true;
+      } else if (filter === "unread") {
+        show = read === "unread";
+      } else {
+        show = typeGroups[filter]?.includes(type);
+      }
+
+      card.style.display = show ? "grid" : "none";
+    });
+
+    document.querySelectorAll(".notif-date-group").forEach(group => {
+      let hasVisible = false;
+
+      group.querySelectorAll(".notif-card").forEach(card => {
+        if (card.style.display !== "none") {
+          hasVisible = true;
+        }
+      });
+
+      group.style.display = hasVisible ? "flex" : "none";
+    });
+  });
+});
+
+
+document.querySelectorAll(".notif-card").forEach(card => {
+  card.addEventListener("click", function (e) {
+    e.preventDefault();
+    const id = this.dataset.id;
+    const link = this.getAttribute("href");
+
+    fetch(`/notifications/${id}/read/`, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": getCookie("csrftoken"),
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    })
+    .then(() => {
+      this.classList.remove("unread");
+      this.dataset.read = "read";
+
+      const dot = this.querySelector(".unread-dot");
+      if (dot) {
+        dot.outerHTML = '<span class="read-text">прочитано</span>';
+      }
+      window.location.href = link;
+    });
+  });
+});
+
+const markAllBtn = document.getElementById("markAllRead");
+
+if (markAllBtn) {
+  markAllBtn.addEventListener("click", function () {
+    fetch(`/notifications/read-all/`, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": getCookie("csrftoken"),
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    }).then(() => {
+      document.querySelectorAll(".notif-card").forEach(card => {
+        card.classList.remove("unread");
+        card.dataset.read = "read";
+
+        const dot = card.querySelector(".unread-dot");
+        if (dot) {
+          dot.outerHTML = '<span class="read-text">прочитано</span>';
+        }
+      });
+    });
+  });
+}
+
+function getCookie(name) {
+  let cookieValue = null;
+
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+
+      if (cookie.substring(0, name.length + 1) === (name + "=")) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+
+  return cookieValue;
+}
+</script>
+{% endblock %}

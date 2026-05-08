@@ -2,8 +2,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import JoinTeacherByCodeForm, TeacherProfileEditForm
-from .models import TeacherProfile, StudentTeacherLink, CalendarEvent, StudentProfile,Homework, HomeworkMaterial,HomeworkSubmission,HomeworkSubmissionFile
-from datetime import timedelta
+from .models import TeacherProfile, StudentTeacherLink, CalendarEvent, StudentProfile,Homework, HomeworkMaterial,HomeworkSubmission,HomeworkSubmissionFile,Notification
 from django.db.models import Q
 from django.utils import timezone
 import calendar
@@ -17,7 +16,9 @@ import os
 from django.conf import settings
 from google_auth_oauthlib.flow import Flow
 from .google_calendar import credentials_to_dict, sync_lesson_to_google_calendar
-
+from django.db.models import Count
+from django.db.models.functions import TruncDate, TruncWeek, TruncMonth, TruncYear
+from django.views.decorators.http import require_POST
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 def home(request):
@@ -537,6 +538,15 @@ def create_lesson(request, lesson_id=None):
                     if request.session.get("google_credentials"):
                         sync_lesson_to_google_calendar(request, lesson)
 
+                   # if form_data["notify_student"] == "on":
+                        Notification.objects.create(
+                            user=selected_student.user,
+                            title="Новий урок",
+                            message=f"Вам призначено новий урок: {lesson.title}",
+                            notification_type="lesson_created",
+                            link=f"/lesson/{lesson.id}/"
+                        )
+
                     weekday_map = {
                         "mon": 0,
                         "tue": 1,
@@ -585,6 +595,7 @@ def create_lesson(request, lesson_id=None):
 
             except ValueError:
                 messages.error(request, "Перевірте правильність дати, часу або тривалості.")
+
 
     context = {
         "students": student_profiles,
@@ -852,7 +863,37 @@ def create_homework(request, pk=None):
                 allow_file_answer=require_file,
             )
 
+            if homework:
+                homework.student = student_profile.user
+                homework.title = title
+                homework.description = description
+                homework.deadline = deadline
+                homework.allow_late_submission = allow_late
+                homework.allow_file_answer = require_file
+                homework.save()
+            else:
+                homework = Homework.objects.create(
+                    teacher=request.user,
+                    student=student_profile.user,
+                    title=title,
+                    description=description,
+                    deadline=deadline,
+                    status="assigned",
+                    allow_late_submission=allow_late,
+                    allow_file_answer=require_file,
+                )
+
+            delete_ids = request.POST.getlist("delete_material_ids")
+            Notification.objects.create(
+                user=homework.student,
+                title="Нове домашнє завдання",
+                message=f"Вам призначено нове домашнє завдання: {homework.title}",
+                notification_type="homework_created",
+                link=f"/homework/{homework.id}/"
+            )
+
         delete_ids = request.POST.getlist("delete_material_ids")
+
 
         if delete_ids:
             materials_to_delete = HomeworkMaterial.objects.filter(
@@ -947,6 +988,14 @@ def homework_detail(request, pk):
             submission.checked_at = None
             submission.save()
 
+            Notification.objects.create(
+                user=homework.teacher,
+                title="Домашнє завдання здано",
+                message=f"{request.user.first_name} {request.user.last_name} здав(ла) завдання: {homework.title}",
+                notification_type="homework_submitted",
+                link=f"/homework/{homework.id}/"
+            )
+
             messages.success(request, "Домашнє завдання надіслано.")
             return redirect("homework_detail", pk=homework.pk)
 
@@ -966,9 +1015,9 @@ def homework_detail(request, pk):
             comment = request.POST.get("teacher_comment", "").strip()
             result = request.POST.get("result")
 
-            if not comment:
-                messages.error(request, "Напиши коментар перед перевіркою.")
-                return redirect("homework_detail", pk=homework.pk)
+            # if not comment:
+            #     messages.error(request, "Напиши коментар перед перевіркою.")
+            #     return redirect("homework_detail", pk=homework.pk)
 
             submission.teacher_comment = comment
             submission.checked_at = timezone.now()
@@ -981,6 +1030,14 @@ def homework_detail(request, pk):
                 homework.status = "checked"
 
             homework.save()
+
+            Notification.objects.create(
+                user=homework.student,
+                title="Домашнє завдання перевірено",
+                message=f"Ваше домашнє завдання перевірено: {homework.title}",
+                notification_type="homework_checked",
+                link=f"/homework/{homework.id}/"
+            )
 
             messages.success(request, "Результат перевірки збережено.")
             return redirect("homework_detail", pk=homework.pk)
@@ -1173,3 +1230,463 @@ def sync_user_lessons_after_google_connect(request):
 
     for lesson in lessons:
         sync_lesson_to_google_calendar(request, lesson)
+
+@login_required
+def teacher_statistics(request):
+    teacher_profile = TeacherProfile.objects.filter(user=request.user).first()
+
+    if not teacher_profile:
+        return redirect("dashboard")
+
+    now = timezone.now()
+    period = request.GET.get("period", "month")
+
+    if period == "week":
+        period_start = now - timedelta(days=7)
+        period_label = "Останні 7 днів"
+    elif period == "month":
+        period_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        period_label = "Цей місяць"
+    elif period == "year":
+        period_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        period_label = "Цей рік"
+    elif period == "all":
+        period_start = None
+        period_label = "Весь час"
+    else:
+        period = "month"
+        period_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        period_label = "Цей місяць"
+
+    lessons = CalendarEvent.objects.filter(
+        teacher=request.user,
+        event_type="lesson",
+        is_cancelled=False
+    )
+
+    if period_start:
+        period_lessons = lessons.filter(
+            start_time__gte=period_start,
+            start_time__lte=now
+        )
+    else:
+        period_lessons = lessons.filter(start_time__lte=now)
+
+    completed_lessons = period_lessons.filter(start_time__lt=now)
+
+    total_minutes = 0
+    for lesson in completed_lessons:
+        if lesson.start_time and lesson.end_time:
+            total_minutes += int((lesson.end_time - lesson.start_time).total_seconds() // 60)
+
+    total_hours = round(total_minutes / 60, 1)
+
+    homeworks = Homework.objects.filter(teacher=request.user)
+
+    if period_start:
+        period_homeworks = homeworks.filter(created_at__gte=period_start)
+    else:
+        period_homeworks = homeworks
+
+    hw_total = period_homeworks.count()
+    hw_submitted = period_homeworks.filter(status__in=["submitted", "checked"]).count()
+    hw_checked = period_homeworks.filter(status="checked").count()
+    hw_late = period_homeworks.filter(status="late").count()
+    hw_need_check = period_homeworks.filter(status="submitted").count()
+
+    hw_percent = round((hw_submitted / hw_total) * 100) if hw_total else 0
+
+    student_links = StudentTeacherLink.objects.filter(
+        teacher=teacher_profile
+    ).select_related("student__user")
+
+    students_stats = []
+
+    for link in student_links:
+        student_user = link.student.user
+
+        student_lessons = lessons.filter(student=student_user)
+
+        if period_start:
+            student_completed_lessons = student_lessons.filter(
+                start_time__gte=period_start,
+                start_time__lt=now
+            )
+            student_homeworks = homeworks.filter(
+                student=student_user,
+                created_at__gte=period_start
+            )
+        else:
+            student_completed_lessons = student_lessons.filter(start_time__lt=now)
+            student_homeworks = homeworks.filter(student=student_user)
+
+        student_hw_total = student_homeworks.count()
+        student_hw_done = student_homeworks.filter(status__in=["submitted", "checked"]).count()
+        student_hw_late = student_homeworks.filter(status="late").count()
+
+        homework_percent = round((student_hw_done / student_hw_total) * 100) if student_hw_total else 0
+
+        last_lesson = student_lessons.filter(start_time__lt=now).order_by("-start_time").first()
+
+        if homework_percent >= 85:
+            status = "Відмінно"
+            status_class = "green"
+        elif homework_percent >= 60:
+            status = "Добре"
+            status_class = "amber"
+        else:
+            status = "Потребує уваги"
+            status_class = "red"
+
+        students_stats.append({
+            "student": student_user,
+            "lessons_count": student_completed_lessons.count(),
+            "homework_percent": homework_percent,
+            "homework_late": student_hw_late,
+            "last_lesson": last_lesson,
+            "status": status,
+            "status_class": status_class,
+        })
+
+    chart_labels = []
+    chart_values = []
+
+    if period == "week":
+        chart_labels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"]
+        chart_values = [0, 0, 0, 0, 0, 0, 0]
+
+        for lesson in completed_lessons:
+            day_index = lesson.start_time.weekday()
+            chart_values[day_index] += 1
+
+    elif period == "month":
+        chart_labels = ["Тиж 1", "Тиж 2", "Тиж 3", "Тиж 4"]
+        chart_values = [0, 0, 0, 0]
+
+        for lesson in completed_lessons:
+            day = lesson.start_time.day
+
+            if day <= 7:
+                chart_values[0] += 1
+            elif day <= 14:
+                chart_values[1] += 1
+            elif day <= 21:
+                chart_values[2] += 1
+            else:
+                chart_values[3] += 1
+
+    elif period == "year":
+        chart_labels = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"]
+        chart_values = [0] * 12
+
+        for lesson in completed_lessons:
+            month_index = lesson.start_time.month - 1
+            chart_values[month_index] += 1
+
+    else:
+        chart_labels = ["2024", "2025", "2026"]
+        chart_values = [0, 0, 0]
+
+        for lesson in completed_lessons:
+            year = lesson.start_time.year
+
+            if year == 2024:
+                chart_values[0] += 1
+            elif year == 2025:
+                chart_values[1] += 1
+            elif year == 2026:
+                chart_values[2] += 1
+
+    max_chart_value = max(chart_values) if chart_values and max(chart_values) > 0 else 1
+
+    chart_data = []
+
+    for index, label in enumerate(chart_labels):
+        value = chart_values[index]
+        height = round((value / max_chart_value) * 100) if max_chart_value else 0
+
+        chart_data.append({
+            "label": label,
+            "value": value,
+            "height": height,
+        })
+
+    context = {
+        "period": period,
+        "period_label": period_label,
+
+        "month_lessons_count": completed_lessons.count(),
+        "total_hours": total_hours,
+        "hw_total": hw_total,
+        "hw_submitted": hw_submitted,
+        "hw_checked": hw_checked,
+        "hw_late": hw_late,
+        "hw_need_check": hw_need_check,
+        "hw_percent": hw_percent,
+        "students_count": student_links.count(),
+        "students_stats": students_stats,
+        "chart_data": chart_data,
+    }
+
+    return render(request, "core/teacher_statistics.html", context)
+
+def build_lessons_chart_data(student, period):
+    now = timezone.now()
+
+    qs = CalendarEvent.objects.filter(
+        student=student,
+        event_type="lesson",
+        is_cancelled=False
+    )
+
+    if period == "week":
+        labels = []
+        values = []
+
+        for i in range(6, -1, -1):
+            day = now.date() - timedelta(days=i)
+
+            labels.append(day.strftime("%d.%m"))
+            values.append(
+                qs.filter(start_time__date=day).count()
+            )
+
+        return {
+            "labels": labels,
+            "values": values,
+        }
+
+    if period == "month":
+        labels = []
+        values = []
+
+        for i in range(4, -1, -1):
+            end_day = now.date() - timedelta(days=i * 7)
+            start_day = end_day - timedelta(days=6)
+
+            labels.append(start_day.strftime("тиж. %d.%m"))
+            values.append(
+                qs.filter(
+                    start_time__date__gte=start_day,
+                    start_time__date__lte=end_day
+                ).count()
+            )
+
+        return {
+            "labels": labels,
+            "values": values,
+        }
+
+    if period == "year":
+        labels = []
+        values = []
+
+        for i in range(11, -1, -1):
+            month = now.month - i
+            year = now.year
+
+            while month <= 0:
+                month += 12
+                year -= 1
+
+            labels.append(f"{month:02d}.{year}")
+            values.append(
+                qs.filter(
+                    start_time__year=year,
+                    start_time__month=month
+                ).count()
+            )
+
+        return {
+            "labels": labels,
+            "values": values,
+        }
+
+    labels = []
+    values = []
+
+    first_lesson = qs.order_by("start_time").first()
+
+    if not first_lesson:
+        return {
+            "labels": [],
+            "values": [],
+        }
+
+    start_year = first_lesson.start_time.year
+    end_year = now.year
+
+    for year in range(start_year, end_year + 1):
+        labels.append(str(year))
+        values.append(
+            qs.filter(start_time__year=year).count()
+        )
+
+    return {
+        "labels": labels,
+        "values": values,
+    }
+@login_required
+def student_statistics(request):
+    student = request.user
+    now = timezone.now()
+    period = request.GET.get("period", "week")
+
+    if period == "week":
+        date_from = now - timedelta(days=7)
+    elif period == "month":
+        date_from = now - timedelta(days=30)
+    elif period == "year":
+        date_from = now - timedelta(days=365)
+    else:
+        date_from = None
+
+    homeworks = Homework.objects.filter(student=student)
+    lessons = CalendarEvent.objects.filter(
+        student=student,
+        event_type="lesson",
+        is_cancelled=False
+    )
+
+    if date_from:
+        homeworks = homeworks.filter(created_at__gte=date_from)
+        lessons = lessons.filter(start_time__gte=date_from)
+
+    total_lessons = lessons.count()
+    completed_homeworks = homeworks.filter(status__in=["submitted", "checked"]).count()
+    checked_homeworks = homeworks.filter(status="checked").count()
+    late_homeworks = homeworks.filter(status="late").count()
+    assigned_homeworks = homeworks.filter(status="assigned").count()
+
+    total_homeworks = homeworks.count()
+
+    completion_percent = round(
+        (completed_homeworks / total_homeworks) * 100
+    ) if total_homeworks > 0 else 0
+
+    chart_data = build_lessons_chart_data(student, period)
+
+    recent_homeworks = homeworks.order_by("-created_at")[:5]
+
+    context = {
+        "period": period,
+        "total_lessons": total_lessons,
+        "completed_homeworks": completed_homeworks,
+        "checked_homeworks": checked_homeworks,
+        "late_homeworks": late_homeworks,
+        "assigned_homeworks": assigned_homeworks,
+        "completion_percent": completion_percent,
+        "recent_homeworks": recent_homeworks,
+        "chart_data": chart_data,
+    }
+
+    return render(request, "core/student_statistics.html", context)
+
+
+@login_required
+def student_statistics_api(request):
+    student = request.user
+    now = timezone.now()
+    period = request.GET.get("period", "week")
+
+    if period == "week":
+        date_from = now - timedelta(days=7)
+    elif period == "month":
+        date_from = now - timedelta(days=30)
+    elif period == "year":
+        date_from = now - timedelta(days=365)
+    else:
+        date_from = None
+
+    homeworks = Homework.objects.filter(student=student)
+    lessons = CalendarEvent.objects.filter(
+        student=student,
+        event_type="lesson",
+        is_cancelled=False
+    )
+
+    if date_from:
+        homeworks = homeworks.filter(created_at__gte=date_from)
+        lessons = lessons.filter(start_time__gte=date_from)
+
+    total_lessons = lessons.count()
+    completed_homeworks = homeworks.filter(status__in=["submitted", "checked"]).count()
+    checked_homeworks = homeworks.filter(status="checked").count()
+    late_homeworks = homeworks.filter(status="late").count()
+    assigned_homeworks = homeworks.filter(status="assigned").count()
+
+    total_homeworks = homeworks.count()
+
+    completion_percent = round(
+        (completed_homeworks / total_homeworks) * 100
+    ) if total_homeworks > 0 else 0
+
+    return JsonResponse({
+        "total_lessons": total_lessons,
+        "completed_homeworks": completed_homeworks,
+        "checked_homeworks": checked_homeworks,
+        "late_homeworks": late_homeworks,
+        "assigned_homeworks": assigned_homeworks,
+        "completion_percent": completion_percent,
+        "chart_data": build_lessons_chart_data(student, period),
+    })
+
+@login_required
+def notifications_view(request):
+    notifications = Notification.objects.filter(
+        user=request.user
+    ).order_by("-created_at")
+
+    today = timezone.localdate()
+    yesterday = today - timedelta(days=1)
+
+    context = {
+        "notifications": notifications,
+        "total_count": notifications.count(),
+        "unread_count": notifications.filter(is_read=False).count(),
+        "today": today,
+        "yesterday": yesterday,
+    }
+
+    return render(request, "core/notifications.html", context)
+
+
+@login_required
+@require_POST
+def mark_notification_read(request, pk):
+    Notification.objects.filter(
+        id=pk,
+        user=request.user
+    ).update(is_read=True)
+
+    return JsonResponse({"status": "ok"})
+
+@login_required
+def mark_all_notifications_read(request):
+    Notification.objects.filter(
+        user=request.user,
+        is_read=False
+    ).update(is_read=True)
+
+    return JsonResponse({"status": "ok"})
+@login_required
+def unread_notifications_api(request):
+    notifications = Notification.objects.filter(
+        user=request.user,
+        is_read=False
+    ).order_by("-created_at")[:5]
+
+    data = []
+
+    for n in notifications:
+        data.append({
+            "id": n.id,
+            "title": n.title,
+            "message": n.message,
+            "link": n.link or "",
+            "type": n.notification_type,
+        })
+
+    return JsonResponse({
+        "notifications": data
+    })

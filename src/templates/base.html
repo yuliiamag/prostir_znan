@@ -257,8 +257,57 @@
       color: var(--text-main);
       line-height: 1.1;
     }
+#toast-container {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
+.toast-notification {
+  width: 330px;
+  padding: 15px 16px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid #a8ca88;
+  box-shadow: 0 18px 40px rgba(32, 70, 55, 0.18);
+  color: #204637;
+  animation: toastSlideIn 0.3s ease;
+}
 
+.toast-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.toast-message {
+  font-size: 14px;
+  line-height: 1.45;
+  color: #49685c;
+}
+
+.toast-link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0c5f4f;
+  text-decoration: none;
+}
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(35px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
     @media (max-width: 900px) {
       .layout {
         grid-template-columns: 1fr;
@@ -299,6 +348,11 @@
     <span class="menu-icon"></span>
     <span>Календар</span>
   </a>
+          <a href="{% url 'notifications' %}">
+          <span class="menu-icon"></span>
+          <span>Сповіщення</span>
+        </a>
+
 
   <a href="#" class="menu-item">
     <span class="menu-icon"></span>
@@ -311,8 +365,22 @@
 
 
          <a href="{% url 'homework' %}">
+          <span class="menu-icon"></span>
           <span>Домашні завдання</span>
         </a>
+
+          {% if request.user.teacher_profile %}
+            <a href="{% url 'teacher_statistics' %}">
+              <span class="menu-icon"></span>
+              <span>Статистика</span>
+            </a>
+          {% endif %}
+          {% if request.user.student_profile %}
+            <a href="{% url 'student_statistics' %}">
+              <span class="menu-icon"></span>
+              <span>Мій прогрес</span>
+            </a>
+          {% endif %}
 
   {% if user.is_authenticated %}
     {% if user.teacher_profile %}
@@ -381,5 +449,59 @@
     </main>
   </div>
 {% block extra_js %}{% endblock %}
+<div id="toast-container"></div>
+<script>
+const shownNotifications = new Set();
+
+function showToast(notification) {
+  if (shownNotifications.has(notification.id)) return;
+
+  shownNotifications.add(notification.id);
+  fetch(`/notifications/${notification.id}/read/`, {
+  method: "POST",
+  headers: {
+    "X-CSRFToken": getCookie("csrftoken"),
+    "X-Requested-With": "XMLHttpRequest"
+  }
+});
+
+  const container = document.getElementById("toast-container");
+
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = "toast-notification";
+
+  toast.innerHTML = `
+    <div class="toast-title">${notification.title}</div>
+    <div class="toast-message">${notification.message}</div>
+    ${
+      notification.link
+        ? `<a href="${notification.link}" class="toast-link">Відкрити →</a>`
+        : ""
+    }
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.remove();
+  }, 7000);
+}
+
+function checkNotifications() {
+  fetch("{% url 'unread_notifications_api' %}")
+    .then(response => response.json())
+    .then(data => {
+      data.notifications.forEach(notification => {
+        showToast(notification);
+      });
+    })
+    .catch(error => console.log(error));
+}
+
+checkNotifications();
+setInterval(checkNotifications, 15000);
+</script>
 </body>
 </html>

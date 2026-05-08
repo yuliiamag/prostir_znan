@@ -3,6 +3,7 @@ import random
 import string
 from django.conf import settings
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 def generate_access_code(length=6):
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
@@ -75,6 +76,7 @@ class CalendarEvent(models.Model):
     is_cancelled = models.BooleanField(default=False)
     google_event_id = models.CharField(max_length=255, blank=True, null=True)
     is_synced_with_google = models.BooleanField(default=False)
+    reminder_email_sent = models.BooleanField(default=False)
 
     teacher = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -146,6 +148,7 @@ class Homework(models.Model):
     allow_text_answer = models.BooleanField(default=True)
     allow_file_answer = models.BooleanField(default=True)
     allow_late_submission = models.BooleanField(default=True)
+    reminder_email_sent = models.BooleanField(default=False)
 
     status = models.CharField(
         max_length=20,
@@ -216,3 +219,31 @@ class HomeworkSubmissionFile(models.Model):
         return f"Файл відповіді: {self.submission.homework.title}"
 
 
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ("lesson_created", "Створено урок"),
+        ("homework_created", "Створено домашнє завдання"),
+        ("homework_submitted", "Домашнє завдання здано"),
+        ("homework_checked", "Домашнє завдання перевірено"),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="notifications"
+    )
+
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    notification_type = models.CharField(
+        max_length=30,
+        choices=NOTIFICATION_TYPES
+    )
+
+    link = models.CharField(max_length=255, blank=True, null=True)
+
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title

@@ -34,6 +34,15 @@ urlpatterns = [
     path("landing/", views.landing, name="landing"),
     path("google/connect/", views.google_calendar_auth, name="google_calendar_auth"),
     path("google/callback/", views.google_calendar_callback, name="google_calendar_callback"),
+    path("teacher/statistics/", views.teacher_statistics, name="teacher_statistics"),
+    path("student/statistics/", views.student_statistics, name="student_statistics"),
+    path("notifications/", views.notifications_view, name="notifications"),
+    path("student/statistics/api/", views.student_statistics_api, name="student_statistics_api"),
+    path("api/notifications/unread/", views.unread_notifications_api, name="unread_notifications_api"),
+    path("api/notifications/read/<int:pk>/", views.mark_notification_read, name="mark_notification_read"),
+path("notifications/", views.notifications_view, name="notifications"),
+path("notifications/<int:pk>/read/", views.mark_notification_read, name="mark_notification_read"),
+path("notifications/read-all/", views.mark_all_notifications_read, name="mark_all_notifications_read"),
 ]
 
 
