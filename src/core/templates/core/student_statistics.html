@@ -1,0 +1,827 @@
+{% extends "base.html" %}
+
+{% block title %}Мій прогрес • MathSpace{% endblock %}
+
+{% block content %}
+
+<div class="stats-page">
+  <div class="stats-wrap">
+
+    <section class="sp-hero">
+      <div>
+        <h1>
+          Мій<br>
+          <span>прогрес</span>
+        </h1>
+        <p>Активність, виконані завдання та загальна картина навчання.</p>
+      </div>
+
+      <div class="ring-box">
+        <div class="ring">
+          <svg viewBox="0 0 100 100">
+            <circle class="ring-bg" cx="50" cy="50" r="44"></circle>
+            <circle
+              class="ring-fg"
+              cx="50"
+              cy="50"
+              r="44"
+              style="stroke-dasharray: {{ completion_percent }} 100;"
+            ></circle>
+          </svg>
+
+          <div class="ring-inner">
+            <strong>{{ completion_percent }}%</strong>
+            <span>ДЗ</span>
+          </div>
+        </div>
+        <div class="ring-label">виконано завдань</div>
+      </div>
+    </section>
+
+    <section class="streak-banner">
+      <div class="streak-icon">🔥</div>
+      <div class="streak-number">{{ total_lessons }}</div>
+      <div>
+        <h3>Активність у навчанні</h3>
+        <p>Усього проведено {{ total_lessons }} занять · продовжуй у тому ж темпі</p>
+      </div>
+    </section>
+
+    <section class="sp-stats">
+      <div class="sp-stat">
+        <div class="sp-stat-icon">📅</div>
+        <strong id="total-lessons">{{ total_lessons }}</strong>
+        <span>Уроків всього</span>
+        <small>заняття у системі</small>
+      </div>
+
+      <div class="sp-stat">
+        <div class="sp-stat-icon">✅</div>
+        <strong id="completed-homeworks">{{ completed_homeworks }}</strong>
+        <span>Здано завдань</span>
+        <small>з усіх виданих</small>
+      </div>
+
+      <div class="sp-stat">
+        <div class="sp-stat-icon">⭐</div>
+        <strong id="checked-homeworks">{{ checked_homeworks }}</strong>
+        <span>Перевірено</span>
+        <small>роботи з коментарем</small>
+      </div>
+
+      <div class="sp-stat">
+        <div class="sp-stat-icon">⚠️</div>
+        <strong id="late-homeworks">{{ late_homeworks }}</strong>
+        <span>Прострочено</span>
+        <small class="danger-note">потребує уваги</small>
+      </div>
+    </section>
+
+    <section class="sp-grid">
+      <div class="sp-card">
+        <div class="card-header">
+          <div>
+            <h2>Статистика уроків</h2>
+              <p>Кількість проведених уроків за обраний період</p>
+          </div>
+            <div class="period-tabs">
+            <button type="button" class="period-tab active" data-period="week">Тиж</button>
+            <button type="button" class="period-tab" data-period="month">Міс</button>
+            <button type="button" class="period-tab" data-period="year">Рік</button>
+            <button type="button" class="period-tab" data-period="all">Весь час</button>
+          </div>
+        </div>
+
+        <div class="bar-area" id="bar-area"></div>
+      </div>
+
+      <div class="sp-card">
+        <h2>Статус завдань</h2>
+        <p class="card-sub">Поточний стан домашніх завдань</p>
+
+        <div class="donut-area">
+          <div class="donut">
+            <div class="donut-center">
+              <strong>
+                {{ completed_homeworks|add:assigned_homeworks|add:late_homeworks }}
+              </strong>
+              <span>всього</span>
+            </div>
+          </div>
+
+          <div class="donut-list">
+            <div class="donut-row">
+              <span class="dot mint"></span>
+              <span>Здано</span>
+              <strong>{{ completed_homeworks }}</strong>
+            </div>
+
+            <div class="donut-row">
+              <span class="dot blue"></span>
+              <span>Перевірено</span>
+              <strong>{{ checked_homeworks }}</strong>
+            </div>
+
+            <div class="donut-row">
+              <span class="dot amber"></span>
+              <span>Потрібно здати</span>
+              <strong>{{ assigned_homeworks }}</strong>
+            </div>
+
+            <div class="donut-row">
+              <span class="dot red"></span>
+              <span>Прострочено</span>
+              <strong>{{ late_homeworks }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sp-card recent-card">
+      <div class="card-header">
+        <div>
+          <h2>Останні завдання</h2>
+          <p>Найновіші зміни у твоїх домашніх завданнях</p>
+        </div>
+
+        <a href="{% url 'homework' %}" class="all-link">Всі завдання →</a>
+      </div>
+
+      <div class="recent-list">
+        {% for hw in recent_homeworks %}
+          <a href="{% url 'homework_detail' hw.id %}" class="recent-item {{ hw.status }}">
+            <div class="recent-icon">
+              {% if hw.status == "assigned" %}
+                📝
+              {% elif hw.status == "submitted" %}
+                📤
+              {% elif hw.status == "checked" %}
+                ✅
+              {% elif hw.status == "late" %}
+                ⚠️
+              {% endif %}
+            </div>
+
+            <div class="recent-body">
+              <h3>{{ hw.title }}</h3>
+
+              {% if hw.deadline %}
+                <p>До {{ hw.deadline|date:"d.m.Y H:i" }}</p>
+              {% else %}
+                <p>Без дедлайну</p>
+              {% endif %}
+            </div>
+
+            {% if hw.status == "assigned" %}
+              <span class="recent-badge assigned">Здати</span>
+            {% elif hw.status == "submitted" %}
+              <span class="recent-badge submitted">Здано</span>
+            {% elif hw.status == "checked" %}
+              <span class="recent-badge checked">Перевірено</span>
+            {% elif hw.status == "late" %}
+              <span class="recent-badge late">Прострочено</span>
+            {% endif %}
+          </a>
+        {% empty %}
+          <div class="empty-state">
+            <div>📭</div>
+            <p>Домашніх завдань ще немає</p>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<style>
+.stats-page {
+  padding: 22px 18px 42px;
+  color: #204637;
+}
+
+.stats-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.sp-hero {
+  min-height: 230px;
+  border-radius: 30px;
+  padding: 34px 38px;
+  background:
+    radial-gradient(circle at 85% 20%, rgba(168, 202, 136, .25), transparent 32%),
+    #0c5f4f;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.sp-hero-label {
+  font-size: 13px;
+  opacity: .75;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.sp-hero h1 {
+  margin: 0;
+  font-size: 46px;
+  line-height: .95;
+  letter-spacing: -1px;
+}
+
+.sp-hero h1 span {
+  color: #cfe8b3;
+  font-style: italic;
+}
+
+.sp-hero p {
+  max-width: 430px;
+  margin: 16px 0 0;
+  color: rgba(255,255,255,.72);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ring-box {
+  text-align: center;
+}
+
+.ring {
+  width: 134px;
+  height: 134px;
+  position: relative;
+}
+
+.ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ring-bg,
+.ring-fg {
+  fill: none;
+  stroke-width: 8;
+}
+
+.ring-bg {
+  stroke: rgba(255,255,255,.16);
+}
+
+.ring-fg {
+  stroke: #cfe8b3;
+  stroke-linecap: round;
+  path-length: 100;
+}
+
+.ring-inner {
+  position: absolute;
+  inset: 16px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.ring-inner strong {
+  font-size: 26px;
+}
+
+.ring-inner span {
+  font-size: 11px;
+  opacity: .7;
+}
+
+.ring-label {
+  margin-top: 8px;
+  color: rgba(255,255,255,.65);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.streak-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #f8faf7;
+  border: 1px solid #a8ca88;
+  border-radius: 20px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+
+.streak-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background: #fff3cf;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.streak-number {
+  font-size: 34px;
+  font-weight: 900;
+  color: #0c5f4f;
+}
+
+.streak-banner h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.streak-banner p {
+  margin: 0;
+  color: #6f8779;
+  font-size: 13px;
+}
+
+.sp-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.sp-stat {
+  background: #0f4f43;
+  color: white;
+  border-radius: 22px;
+  padding: 18px;
+  min-height: 150px;
+}
+
+.sp-stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.sp-stat strong {
+  display: block;
+  font-size: 30px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.sp-stat span {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sp-stat small {
+  display: block;
+  margin-top: 8px;
+  color: rgba(255,255,255,.45);
+  font-size: 11px;
+}
+
+.sp-stat .danger-note {
+  color: #ffb4b4;
+}
+
+.sp-grid {
+  display: grid;
+  grid-template-columns: 1.6fr .9fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.sp-card {
+  background: #f8faf7;
+  border: 1px solid #a8ca88;
+  border-radius: 24px;
+  padding: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.sp-card h2 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  color: #153d31;
+}
+
+.sp-card p,
+.card-sub {
+  margin: 0;
+  color: #6f8779;
+  font-size: 12px;
+}
+
+.period-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.period-tab {
+  border: 1px solid #a8ca88;
+  background: #eef2ec;
+  color: #204637;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.period-tab.active {
+  background: #0c5f4f;
+  color: white;
+  border-color: #0c5f4f;
+}
+
+.bar-area {
+  height: 210px;
+  display: grid;
+  align-items: end;
+  gap: 12px;
+  padding-top: 24px;
+  overflow: hidden;
+}
+
+.bar-area.period-week {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.bar-area.period-month {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.bar-area.period-year {
+  grid-template-columns: repeat(12, 1fr);
+}
+
+.bar-area.period-all {
+  grid-template-columns: repeat(auto-fit, minmax(54px, 1fr));
+}
+
+.bar-col {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
+  align-items: center;
+}
+
+.bar-wrap {
+  width: 38px;
+  height: 145px;
+  background: #edf4e8;
+  border-radius: 999px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.bar {
+  width: 100%;
+  min-height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #a8ca88, #0c5f4f);
+  position: relative;
+}
+
+.bar-label {
+  font-size: 10px;
+  color: #6f8779;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.bar-area {
+  height: 210px;
+  display: grid;
+  justify-content: center; /* ВАЖЛИВО */
+  align-items: end;
+  gap: 14px;
+  padding-top: 24px;
+}
+
+.bar-area.period-week {
+  grid-template-columns: repeat(7, 40px);
+}
+
+.bar-area.period-month {
+  grid-template-columns: repeat(5, 70px);
+}
+
+.bar-area.period-year {
+  grid-template-columns: repeat(12, 40px);
+}
+
+.bar-area.period-all {
+  grid-template-columns: repeat(auto-fit, 40px);
+}
+
+.donut {
+  width: 124px;
+  height: 124px;
+  border-radius: 50%;
+  background:
+    conic-gradient(#46b37b 0 45%, #4b8fe2 45% 70%, #e3b64b 70% 88%, #d95c5c 88% 100%);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.donut-center {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: #f8faf7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.donut-center strong {
+  font-size: 22px;
+  color: #153d31;
+}
+
+.donut-center span {
+  font-size: 10px;
+  color: #6f8779;
+}
+
+.donut-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.donut-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 99px;
+}
+
+.dot.mint { background: #46b37b; }
+.dot.blue { background: #4b8fe2; }
+.dot.amber { background: #e3b64b; }
+.dot.red { background: #d95c5c; }
+
+.all-link {
+  color: #0c5f4f;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recent-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: #eef2ec;
+  border-radius: 18px;
+  padding: 13px 14px;
+  text-decoration: none;
+  color: #204637;
+  transition: .18s;
+}
+
+.recent-item:hover {
+  transform: translateY(-1px);
+  background: #e7f1e2;
+}
+
+.recent-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recent-body h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.recent-body p {
+  margin: 0;
+  font-size: 12px;
+  color: #6f8779;
+}
+
+.recent-badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.recent-badge.assigned {
+  background: #fff0bd;
+  color: #854d0e;
+}
+
+.recent-badge.submitted {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.recent-badge.checked {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.recent-badge.late {
+  background: #ffe1e1;
+  color: #991b1b;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 28px;
+  color: #6f8779;
+}
+
+.empty-state div {
+  font-size: 34px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 950px) {
+  .sp-hero,
+  .streak-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sp-stats,
+  .sp-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sp-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .stats-page {
+    padding: 16px 10px 32px;
+  }
+
+  .sp-hero {
+    padding: 26px 22px;
+  }
+
+  .sp-hero h1 {
+    font-size: 38px;
+  }
+
+  .sp-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .card-header {
+    flex-direction: column;
+  }
+
+  .donut-area {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .recent-item {
+    grid-template-columns: auto 1fr;
+  }
+
+  .recent-badge {
+    grid-column: 2;
+    width: fit-content;
+  }
+}
+</style>
+
+<script>
+let chartData = {{ chart_data|safe }};
+
+function renderBars(data, period) {
+  const area = document.getElementById("bar-area");
+
+  area.className = `bar-area period-${period}`;
+  area.innerHTML = "";
+
+  const maxValue = Math.max(...data.values, 1);
+
+  data.labels.forEach((label, index) => {
+    const value = data.values[index];
+    const height = value > 0 ? Math.max((value / maxValue) * 100, 8) : 0;
+
+    const col = document.createElement("div");
+    col.className = "bar-col";
+
+    col.innerHTML = `
+      <div class="bar-wrap">
+        <div
+          class="bar ${value > 0 ? 'has-value' : ''}"
+          data-val="${value}"
+          style="height:${height}%"
+        ></div>
+      </div>
+      <div class="bar-label">${label}</div>
+    `;
+
+    area.appendChild(col);
+  });
+}
+
+function loadStatistics(period) {
+  fetch(`/student/statistics/api/?period=${period}`)
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById("total-lessons").textContent = data.total_lessons;
+      document.getElementById("completed-homeworks").textContent = data.completed_homeworks;
+      document.getElementById("checked-homeworks").textContent = data.checked_homeworks;
+      document.getElementById("late-homeworks").textContent = data.late_homeworks;
+
+      const donutTotal = data.completed_homeworks + data.assigned_homeworks + data.late_homeworks;
+
+      if (document.getElementById("donut-total")) {
+        document.getElementById("donut-total").textContent = donutTotal;
+      }
+
+      if (document.getElementById("donut-completed")) {
+        document.getElementById("donut-completed").textContent = data.completed_homeworks;
+      }
+
+      if (document.getElementById("donut-checked")) {
+        document.getElementById("donut-checked").textContent = data.checked_homeworks;
+      }
+
+      if (document.getElementById("donut-assigned")) {
+        document.getElementById("donut-assigned").textContent = data.assigned_homeworks;
+      }
+
+      if (document.getElementById("donut-late")) {
+        document.getElementById("donut-late").textContent = data.late_homeworks;
+      }
+
+      renderBars(data.chart_data, period);
+    });
+}
+
+document.querySelectorAll(".period-tab").forEach(button => {
+  button.addEventListener("click", function () {
+    document.querySelectorAll(".period-tab").forEach(btn => {
+      btn.classList.remove("active");
+    });
+
+    this.classList.add("active");
+
+    const period = this.dataset.period;
+    loadStatistics(period);
+  });
+});
+
+renderBars(chartData, "{{ period }}");
+</script>
+
+{% endblock %}
