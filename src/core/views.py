@@ -2,8 +2,8 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import JoinTeacherByCodeForm, TeacherProfileEditForm
-from .models import TeacherProfile, StudentTeacherLink, CalendarEvent, StudentProfile,Homework, HomeworkMaterial,HomeworkSubmission,HomeworkSubmissionFile,Notification
-from django.db.models import Q
+from .models import TeacherProfile, StudentTeacherLink, CalendarEvent, StudentProfile,Homework, HomeworkMaterial,HomeworkSubmission,HomeworkSubmissionFile,Notification,Conversation, ChatMessage
+from django.db.models import Q, Max
 from django.utils import timezone
 import calendar
 from datetime import date, datetime, timedelta
@@ -1689,4 +1689,135 @@ def unread_notifications_api(request):
 
     return JsonResponse({
         "notifications": data
+    })
+
+
+@login_required
+def chat_view(request, conversation_id=None):
+    user = request.user
+
+
+    if hasattr(user, "teacher_profile"):
+        student_links = StudentTeacherLink.objects.filter(
+            teacher=user.teacher_profile
+        ).select_related("student__user")
+
+        for link in student_links:
+            Conversation.objects.get_or_create(
+                teacher=user,
+                student=link.student.user
+            )
+
+        conversations = Conversation.objects.filter(teacher=user)
+
+    else:
+        links = StudentTeacherLink.objects.filter(
+            student=user.student_profile
+        ).select_related("teacher__user")
+
+        for link in links:
+            Conversation.objects.get_or_create(
+                teacher=link.teacher.user,
+                student=user
+            )
+
+        conversations = Conversation.objects.filter(student=user)
+
+    conversations = conversations.order_by("-updated_at")
+
+    active_conversation = None
+
+    if conversation_id:
+        active_conversation = get_object_or_404(
+            conversations,
+            id=conversation_id
+        )
+    elif conversations.exists():
+        active_conversation = conversations.first()
+
+    messages = []
+    if active_conversation:
+        Notification.objects.filter(
+            user=request.user,
+            link=f"/messages/{active_conversation.id}/",
+            is_read=False
+        ).update(is_read=True)
+
+    if active_conversation:
+        messages = active_conversation.messages.select_related("sender")
+
+        active_conversation.messages.exclude(sender=user).update(is_read=True)
+
+    context = {
+        "conversations": conversations,
+        "active_conversation": active_conversation,
+        "messages": messages,
+    }
+
+    return render(request, "core/chat.html", context)
+
+
+@login_required
+def send_chat_message(request, conversation_id):
+    if request.method != "POST":
+        return JsonResponse({"error": "Метод не дозволений"}, status=405)
+
+    conversation = get_object_or_404(
+        Conversation.objects.filter(
+            Q(teacher=request.user) | Q(student=request.user)
+        ),
+        id=conversation_id
+    )
+
+    text = request.POST.get("text", "").strip()
+    file = request.FILES.get("file")
+
+    if not text and not file:
+        return JsonResponse({"error": "Порожнє повідомлення"}, status=400)
+
+    message = ChatMessage.objects.create(
+        conversation=conversation,
+        sender=request.user,
+        text=text,
+        file=file
+    )
+    conversation.updated_at = message.created_at
+    conversation.save(update_fields=["updated_at"])
+
+    receiver = (
+        conversation.student
+        if request.user == conversation.teacher
+        else conversation.teacher
+    )
+
+    Notification.objects.create(
+        user=receiver,
+        title="Нове повідомлення",
+        message=f"{request.user.first_name} написав(ла) тобі",
+        notification_type="message",
+        link=f"/messages/{conversation.id}/"
+    )
+
+    return JsonResponse({
+        "id": message.id,
+        "conversation_id": conversation.id,
+        "text": message.text,
+        "time": message.created_at.strftime("%H:%M"),
+        "file_url": message.file.url if message.file else "",
+        "file_name": message.file.name.split("/")[-1] if message.file else "",
+    })
+@login_required
+def unread_notifications(request):
+    notifications_count = request.user.notifications.filter(
+        is_read=False
+    ).exclude(notification_type="message").count()
+
+    messages_count = request.user.notifications.filter(
+        is_read=False,
+        notification_type="message"
+    ).count()
+
+    return JsonResponse({
+        "notifications_count": notifications_count,
+        "messages_count": messages_count,
     })

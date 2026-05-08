@@ -225,6 +225,7 @@ class Notification(models.Model):
         ("homework_created", "Створено домашнє завдання"),
         ("homework_submitted", "Домашнє завдання здано"),
         ("homework_checked", "Домашнє завдання перевірено"),
+        ("message", "Нове повідомлення"),
     ]
 
     user = models.ForeignKey(
@@ -247,3 +248,45 @@ class Notification(models.Model):
 
     def __str__(self):
         return self.title
+
+class Conversation(models.Model):
+    teacher = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="teacher_conversations"
+    )
+    student = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="student_conversations"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = ("teacher", "student")
+
+
+class ChatMessage(models.Model):
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.CASCADE,
+        related_name="messages"
+    )
+    sender = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="sent_chat_messages"
+    )
+    text = models.TextField()
+    file = models.FileField(upload_to="chat_files/", blank=True, null=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return self.text[:40]
+
+

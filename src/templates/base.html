@@ -298,6 +298,21 @@
   color: #0c5f4f;
   text-decoration: none;
 }
+
+.notif-badge {
+  min-width: 18px;
+  height: 18px;
+  display: none !important;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  background: #e53935;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0 5px;
+}
 @keyframes toastSlideIn {
   from {
     opacity: 0;
@@ -320,7 +335,7 @@
 
   {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="{% block page_class %}{% endblock %}">
   <div class="layout">
     <aside class="sidebar">
       <div class="sidebar-top">
@@ -348,20 +363,18 @@
     <span class="menu-icon"></span>
     <span>Календар</span>
   </a>
-          <a href="{% url 'notifications' %}">
+         <a href="{% url 'notifications' %}" class="{% if request.path == '/notifications/' %}active{% endif %}">
           <span class="menu-icon"></span>
           <span>Сповіщення</span>
+          <span id="notifications-count" class="notif-badge"></span>
         </a>
 
+          <a href="{% url 'chat' %}" class="{% if request.path == '/messages/' %}active{% endif %}">
+            <span class="menu-icon"></span>
+            <span>Повідомлення</span>
+            <span id="messages-count" class="notif-badge"></span>
+          </a>
 
-  <a href="#" class="menu-item">
-    <span class="menu-icon"></span>
-    <span>Повідомлення</span>
-
-    {% if unread_count %}
-      <span class="badge">{{ unread_count }}</span>
-    {% endif %}
-  </a>
 
 
          <a href="{% url 'homework' %}">
@@ -451,22 +464,27 @@
 {% block extra_js %}{% endblock %}
 <div id="toast-container"></div>
 <script>
-const shownNotifications = new Set();
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+
+  if (parts.length === 2) {
+    return parts.pop().split(";").shift();
+  }
+
+  return "";
+}
 
 function showToast(notification) {
-  if (shownNotifications.has(notification.id)) return;
+  if (!notification) return;
 
-  shownNotifications.add(notification.id);
-  fetch(`/notifications/${notification.id}/read/`, {
-  method: "POST",
-  headers: {
-    "X-CSRFToken": getCookie("csrftoken"),
-    "X-Requested-With": "XMLHttpRequest"
-  }
-});
+  const storageKey = `shown_notification_${notification.id}`;
+
+  if (localStorage.getItem(storageKey)) return;
+
+  localStorage.setItem(storageKey, "true");
 
   const container = document.getElementById("toast-container");
-
   if (!container) return;
 
   const toast = document.createElement("div");
@@ -493,15 +511,49 @@ function checkNotifications() {
   fetch("{% url 'unread_notifications_api' %}")
     .then(response => response.json())
     .then(data => {
-      data.notifications.forEach(notification => {
-        showToast(notification);
-      });
+      if (!data.notifications) return;
+
+      data.notifications
+        .filter(notification => notification.notification_type !== "message")
+        .forEach(notification => {
+          showToast(notification);
+        });
     })
     .catch(error => console.log(error));
 }
 
-checkNotifications();
-setInterval(checkNotifications, 15000);
+function setBadge(id, count) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  count = Number(count);
+
+  if (count > 0) {
+    el.textContent = count;
+    el.style.setProperty("display", "inline-flex", "important");
+  } else {
+    el.textContent = "";
+    el.style.setProperty("display", "none", "important");
+  }
+}
+
+function loadNotifications() {
+  fetch("/api/notifications/unread/")
+    .then(res => res.json())
+    .then(data => {
+      setBadge("notifications-count", data.notifications_count);
+      setBadge("messages-count", data.messages_count);
+    })
+    .catch(error => console.log(error));
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  loadNotifications();
+  checkNotifications();
+
+  setInterval(loadNotifications, 5000);
+  setInterval(checkNotifications, 15000);
+});
 </script>
 </body>
 </html>
