@@ -1038,7 +1038,7 @@ def homework_detail(request, pk):
                 link=f"/homework/{homework.id}/"
             )
 
-            messages.success(request, "Результат перевірки збережено.")
+            #messages.success(request, "Результат перевірки збережено.")
             return redirect("homework_detail", pk=homework.pk)
 
 
@@ -1063,7 +1063,7 @@ def delete_homework(request, pk):
 
     if request.method == "POST":
         homework.delete()
-        messages.success(request, "Домашнє завдання видалено.")
+        #messages.success(request, "Домашнє завдання видалено.")
         return redirect("homework")
 
     return redirect("homework_detail", pk=homework.pk)
@@ -1428,208 +1428,148 @@ def teacher_statistics(request):
     }
 
     return render(request, "core/teacher_statistics.html", context)
-
-def build_lessons_chart_data(student, period):
-    now = timezone.now()
-
-    qs = CalendarEvent.objects.filter(
-        student=student,
-        event_type="lesson",
-        is_cancelled=False
-    )
-
-    if period == "week":
-        labels = []
-        values = []
-
-        for i in range(6, -1, -1):
-            day = now.date() - timedelta(days=i)
-
-            labels.append(day.strftime("%d.%m"))
-            values.append(
-                qs.filter(start_time__date=day).count()
-            )
-
-        return {
-            "labels": labels,
-            "values": values,
-        }
-
-    if period == "month":
-        labels = []
-        values = []
-
-        for i in range(4, -1, -1):
-            end_day = now.date() - timedelta(days=i * 7)
-            start_day = end_day - timedelta(days=6)
-
-            labels.append(start_day.strftime("тиж. %d.%m"))
-            values.append(
-                qs.filter(
-                    start_time__date__gte=start_day,
-                    start_time__date__lte=end_day
-                ).count()
-            )
-
-        return {
-            "labels": labels,
-            "values": values,
-        }
-
-    if period == "year":
-        labels = []
-        values = []
-
-        for i in range(11, -1, -1):
-            month = now.month - i
-            year = now.year
-
-            while month <= 0:
-                month += 12
-                year -= 1
-
-            labels.append(f"{month:02d}.{year}")
-            values.append(
-                qs.filter(
-                    start_time__year=year,
-                    start_time__month=month
-                ).count()
-            )
-
-        return {
-            "labels": labels,
-            "values": values,
-        }
-
-    labels = []
-    values = []
-
-    first_lesson = qs.order_by("start_time").first()
-
-    if not first_lesson:
-        return {
-            "labels": [],
-            "values": [],
-        }
-
-    start_year = first_lesson.start_time.year
-    end_year = now.year
-
-    for year in range(start_year, end_year + 1):
-        labels.append(str(year))
-        values.append(
-            qs.filter(start_time__year=year).count()
-        )
-
-    return {
-        "labels": labels,
-        "values": values,
-    }
 @login_required
 def student_statistics(request):
     student = request.user
     now = timezone.now()
-    period = request.GET.get("period", "week")
+    period = request.GET.get("period", "month")
 
     if period == "week":
-        date_from = now - timedelta(days=7)
+        period_start = now - timedelta(days=7)
+        period_label = "Останні 7 днів"
     elif period == "month":
-        date_from = now - timedelta(days=30)
+        period_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        period_label = "Цей місяць"
     elif period == "year":
-        date_from = now - timedelta(days=365)
+        period_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        period_label = "Цей рік"
+    elif period == "all":
+        period_start = None
+        period_label = "Весь час"
     else:
-        date_from = None
+        period = "month"
+        period_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        period_label = "Цей місяць"
 
-    homeworks = Homework.objects.filter(student=student)
     lessons = CalendarEvent.objects.filter(
         student=student,
         event_type="lesson",
         is_cancelled=False
     )
 
-    if date_from:
-        homeworks = homeworks.filter(created_at__gte=date_from)
-        lessons = lessons.filter(start_time__gte=date_from)
+    if period_start:
+        period_lessons = lessons.filter(
+            start_time__gte=period_start,
+            start_time__lte=now
+        )
+    else:
+        period_lessons = lessons.filter(start_time__lte=now)
 
-    total_lessons = lessons.count()
-    completed_homeworks = homeworks.filter(status__in=["submitted", "checked"]).count()
-    checked_homeworks = homeworks.filter(status="checked").count()
-    late_homeworks = homeworks.filter(status="late").count()
-    assigned_homeworks = homeworks.filter(status="assigned").count()
+    completed_lessons = period_lessons.filter(start_time__lt=now)
 
-    total_homeworks = homeworks.count()
+    homeworks = Homework.objects.filter(student=student)
 
-    completion_percent = round(
-        (completed_homeworks / total_homeworks) * 100
-    ) if total_homeworks > 0 else 0
+    if period_start:
+        period_homeworks = homeworks.filter(created_at__gte=period_start)
+    else:
+        period_homeworks = homeworks
 
-    chart_data = build_lessons_chart_data(student, period)
+    total_homeworks = period_homeworks.count()
+    submitted_homeworks = period_homeworks.filter(status="submitted").count()
+    checked_homeworks = period_homeworks.filter(status="checked").count()
+    late_homeworks = period_homeworks.filter(status="late").count()
+    assigned_homeworks = period_homeworks.filter(status="assigned").count()
+
+    completed_homeworks = submitted_homeworks + checked_homeworks
+
+    completion_percent = round((completed_homeworks / total_homeworks) * 100) if total_homeworks else 0
+    checked_percent = round((checked_homeworks / total_homeworks) * 100) if total_homeworks else 0
+    late_percent = round((late_homeworks / total_homeworks) * 100) if total_homeworks else 0
+
+    chart_labels = []
+    chart_values = []
+
+    if period == "week":
+        chart_labels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"]
+        chart_values = [0, 0, 0, 0, 0, 0, 0]
+
+        for lesson in completed_lessons:
+            day_index = lesson.start_time.weekday()
+            chart_values[day_index] += 1
+
+    elif period == "month":
+        chart_labels = ["Тиж 1", "Тиж 2", "Тиж 3", "Тиж 4"]
+        chart_values = [0, 0, 0, 0]
+
+        for lesson in completed_lessons:
+            day = lesson.start_time.day
+
+            if day <= 7:
+                chart_values[0] += 1
+            elif day <= 14:
+                chart_values[1] += 1
+            elif day <= 21:
+                chart_values[2] += 1
+            else:
+                chart_values[3] += 1
+
+    elif period == "year":
+        chart_labels = ["Січ", "Лют", "Бер", "Кві", "Тра", "Чер", "Лип", "Сер", "Вер", "Жов", "Лис", "Гру"]
+        chart_values = [0] * 12
+
+        for lesson in completed_lessons:
+            month_index = lesson.start_time.month - 1
+            chart_values[month_index] += 1
+
+    else:
+        years = completed_lessons.dates("start_time", "year")
+        chart_labels = [str(year.year) for year in years]
+        chart_values = []
+
+        for year in years:
+            chart_values.append(
+                completed_lessons.filter(start_time__year=year.year).count()
+            )
+
+    max_chart_value = max(chart_values) if chart_values and max(chart_values) > 0 else 1
+
+    chart_data = []
+
+    for index, label in enumerate(chart_labels):
+        value = chart_values[index]
+        height = round((value / max_chart_value) * 100) if max_chart_value else 0
+
+        chart_data.append({
+            "label": label,
+            "value": value,
+            "height": height,
+        })
 
     recent_homeworks = homeworks.order_by("-created_at")[:5]
 
+
     context = {
         "period": period,
-        "total_lessons": total_lessons,
+        "period_label": period_label,
+
+        "total_lessons": completed_lessons.count(),
+        "total_homeworks": total_homeworks,
+
+        "submitted_homeworks": submitted_homeworks,
         "completed_homeworks": completed_homeworks,
         "checked_homeworks": checked_homeworks,
         "late_homeworks": late_homeworks,
         "assigned_homeworks": assigned_homeworks,
+
         "completion_percent": completion_percent,
+        "checked_percent": checked_percent,
+        "late_percent": late_percent,
+
         "recent_homeworks": recent_homeworks,
         "chart_data": chart_data,
     }
 
     return render(request, "core/student_statistics.html", context)
-
-
-@login_required
-def student_statistics_api(request):
-    student = request.user
-    now = timezone.now()
-    period = request.GET.get("period", "week")
-
-    if period == "week":
-        date_from = now - timedelta(days=7)
-    elif period == "month":
-        date_from = now - timedelta(days=30)
-    elif period == "year":
-        date_from = now - timedelta(days=365)
-    else:
-        date_from = None
-
-    homeworks = Homework.objects.filter(student=student)
-    lessons = CalendarEvent.objects.filter(
-        student=student,
-        event_type="lesson",
-        is_cancelled=False
-    )
-
-    if date_from:
-        homeworks = homeworks.filter(created_at__gte=date_from)
-        lessons = lessons.filter(start_time__gte=date_from)
-
-    total_lessons = lessons.count()
-    completed_homeworks = homeworks.filter(status__in=["submitted", "checked"]).count()
-    checked_homeworks = homeworks.filter(status="checked").count()
-    late_homeworks = homeworks.filter(status="late").count()
-    assigned_homeworks = homeworks.filter(status="assigned").count()
-
-    total_homeworks = homeworks.count()
-
-    completion_percent = round(
-        (completed_homeworks / total_homeworks) * 100
-    ) if total_homeworks > 0 else 0
-
-    return JsonResponse({
-        "total_lessons": total_lessons,
-        "completed_homeworks": completed_homeworks,
-        "checked_homeworks": checked_homeworks,
-        "late_homeworks": late_homeworks,
-        "assigned_homeworks": assigned_homeworks,
-        "completion_percent": completion_percent,
-        "chart_data": build_lessons_chart_data(student, period),
-    })
-
 @login_required
 def notifications_view(request):
     notifications = Notification.objects.filter(

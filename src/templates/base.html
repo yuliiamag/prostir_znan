@@ -395,19 +395,19 @@
             </a>
           {% endif %}
 
-  {% if user.is_authenticated %}
-    {% if user.teacher_profile %}
-      <a href="{% url 'teacher_dashboard' %}">
-        <span class="menu-icon"></span>
-        <span>Моя сторінка</span>
-      </a>
-    {% elif user.student_profile %}
-      <a href="{% url 'student_dashboard' %}">
-        <span class="menu-icon"></span>
-        <span>Моя сторінка</span>
-      </a>
-    {% endif %}
-  {% endif %}
+<!--  {% if user.is_authenticated %}-->
+<!--    {% if user.teacher_profile %}-->
+<!--      <a href="{% url 'teacher_dashboard' %}">-->
+<!--        <span class="menu-icon"></span>-->
+<!--        <span>Моя сторінка</span>-->
+<!--      </a>-->
+<!--    {% elif user.student_profile %}-->
+<!--      <a href="{% url 'student_dashboard' %}">-->
+<!--        <span class="menu-icon"></span>-->
+<!--        <span>Моя сторінка</span>-->
+<!--      </a>-->
+<!--    {% endif %}-->
+<!--  {% endif %}-->
 </nav>
 
 
