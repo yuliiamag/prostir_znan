@@ -41,14 +41,17 @@ urlpatterns = [
     path("api/notifications/list/", views.unread_notifications_api, name="unread_notifications_api"),
     path("api/notifications/unread/", views.unread_notifications, name="unread_notifications"),
     path("api/notifications/read/<int:pk>/", views.mark_notification_read, name="mark_notification_read"),
-
     path("notifications/", views.notifications_view, name="notifications"),
     path("notifications/<int:pk>/read/", views.mark_notification_read, name="mark_notification_read"),
     path("notifications/read-all/", views.mark_all_notifications_read, name="mark_all_notifications_read"),
-
     path("messages/", views.chat_view, name="chat"),
     path("messages/<int:conversation_id>/", views.chat_view, name="chat_detail"),
     path("messages/<int:conversation_id>/send/", views.send_chat_message, name="send_chat_message"),
+    path("lesson/<int:lesson_id>/reschedule/", views.request_lesson_reschedule, name="request_lesson_reschedule"),
+    path("lesson/<int:lesson_id>/cancel/", views.cancel_lesson_request, name="cancel_lesson_request"),
+    path("lesson-request/<int:request_id>/accept/", views.accept_reschedule_request, name="accept_reschedule_request"),
+    path("lesson-request/<int:request_id>/decline/", views.decline_reschedule_request, name="decline_reschedule_request"),
+    path("lesson-request/<int:request_id>/counter/", views.counter_reschedule_request, name="counter_reschedule_request"),
 ]
 
 

@@ -316,7 +316,147 @@
     font-size: 20px;
     margin-bottom: 4px;
   }
+.lesson-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
+.cancelled-label {
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 12px;
+  padding: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 61, 46, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-overlay.open {
+  display: flex;
+}
+
+.lesson-modal {
+  width: 100%;
+  max-width: 540px;
+  background: white;
+  border-radius: 26px;
+  box-shadow: 0 24px 80px rgba(10, 61, 46, 0.2);
+  overflow: hidden;
+  animation: modalShow .18s ease;
+}
+
+@keyframes modalShow {
+  from {
+    transform: translateY(10px) scale(.98);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #e8f5ef;
+}
+
+.modal-head h3 {
+  margin: 0;
+  font-size: 28px;
+  color: #0d2b1f;
+  font-weight: 800;
+}
+
+.modal-head button {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid #d6ede3;
+  background: #f2faf6;
+  cursor: pointer;
+  font-size: 22px;
+  color: #7c9b8f;
+}
+
+.lesson-modal form {
+  padding: 24px;
+}
+
+.lesson-modal label {
+  display: block;
+  margin-bottom: 8px;
+  margin-top: 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #4a7a63;
+}
+
+.lesson-modal input,
+.lesson-modal select,
+.lesson-modal textarea {
+  width: 100%;
+  border: 1px solid #d6ede3;
+  border-radius: 16px;
+  padding: 13px 15px;
+  font-size: 14px;
+  font-family: inherit;
+  background: white;
+}
+
+.lesson-modal textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.btn-light,
+.btn-main,
+.btn-danger {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-light {
+  background: #f2faf6;
+  color: #4a7a63;
+}
+
+.btn-main {
+  background: #0c5f4f;
+  color: white;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+}
   @media (max-width: 850px) {
     .detail-grid {
       grid-template-columns: 1fr;
@@ -440,6 +580,8 @@
       <aside class="right-col">
        <section class="person-card">
 
+
+
   {% if student_profile %}
     <a href="{% url 'student_public_profile' student_profile.id %}" class="person-link">
   {% else %}
@@ -487,8 +629,19 @@
               Додати домашнє завдання
             </a>
             <button class="action-btn"> Надіслати нагадування</button>
-            <button class="action-btn"> Перенести урок</button>
-            <button class="action-btn danger">✕ Скасувати урок</button>
+            {% if not lesson.is_cancelled %}
+              <button type="button" class="action-btn" onclick="openRescheduleModal()">
+                 Перенести урок
+              </button>
+
+              <button type="button" class="action-btn danger" onclick="openCancelModal()">
+                 Скасувати урок
+              </button>
+            {% else %}
+              <div class="cancelled-label">
+                Урок скасовано
+              </div>
+            {% endif %}
           </div>
         </section>
       </aside>
@@ -672,7 +825,21 @@
             {% endif %}
             <button class="action-btn"> Написати вчителю</button>
             <button class="action-btn"> Запросити новий урок</button>
-            <button class="action-btn danger">✕ Скасувати урок</button>
+            {% if not lesson.is_cancelled %}
+            <div class="lesson-actions">
+              <button type="button" class="action-btn" onclick="openRescheduleModal()">
+                 Перенести урок
+              </button>
+
+              <button type="button" class="action-btn danger" onclick="openCancelModal()">
+                 Скасувати урок
+              </button>
+            </div>
+          {% else %}
+            <div class="cancelled-label">
+              Урок скасовано
+            </div>
+          {% endif %}
           </div>
         </section>
       </aside>
@@ -688,4 +855,97 @@
   {% endif %}
 
 </div>
+<!-- МОДАЛКА ПЕРЕНЕСЕННЯ -->
+<div class="modal-overlay" id="rescheduleModal">
+  <div class="lesson-modal">
+    <div class="modal-head">
+      <h3>Перенести урок</h3>
+      <button type="button" onclick="closeRescheduleModal()">×</button>
+    </div>
+
+    <form method="post" action="{% url 'request_lesson_reschedule' lesson.id %}">
+      {% csrf_token %}
+
+      <label>Причина</label>
+
+      <select name="reason" required>
+        <option value="">Оберіть причину</option>
+        <option value="Хвороба">Хвороба</option>
+        <option value="Школа">Школа</option>
+        <option value="Сімейні справи">Сімейні справи</option>
+        <option value="Не підходить час">Не підходить час</option>
+        <option value="Інша причина">Інша причина</option>
+      </select>
+
+      <label>Нова дата</label>
+      <input type="date" name="new_date" required>
+
+      <label>Новий час</label>
+      <input type="time" name="new_time" required>
+
+      <label>Коментар</label>
+      <textarea name="comment"></textarea>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-light" onclick="closeRescheduleModal()">
+          Закрити
+        </button>
+
+        <button type="submit" class="btn-main">
+          Надіслати у чат
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="modal-overlay" id="cancelModal">
+  <div class="lesson-modal">
+    <div class="modal-head">
+      <h3>Скасувати урок</h3>
+      <button type="button" onclick="closeCancelModal()">×</button>
+    </div>
+
+    <form method="post" action="{% url 'cancel_lesson_request' lesson.id %}">
+      {% csrf_token %}
+
+      <label>Причина</label>
+      <select name="reason" required>
+        <option value="">Оберіть причину</option>
+        <option value="Хвороба">Хвороба</option>
+        <option value="Школа">Школа</option>
+        <option value="Сімейні справи">Сімейні справи</option>
+        <option value="Не виходить бути присутнім">Не виходить бути присутнім</option>
+        <option value="Інша причина">Інша причина</option>
+      </select>
+
+      <label>Коментар</label>
+      <textarea name="comment"></textarea>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-light" onclick="closeCancelModal()">Закрити</button>
+        <button type="submit" class="btn-danger">Скасувати урок</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openRescheduleModal() {
+  document.getElementById("rescheduleModal").classList.add("open");
+}
+
+function closeRescheduleModal() {
+  document.getElementById("rescheduleModal").classList.remove("open");
+}
+
+function openCancelModal() {
+  document.getElementById("cancelModal").classList.add("open");
+}
+
+function closeCancelModal() {
+  document.getElementById("cancelModal").classList.remove("open");
+}
+</script>
+
+
 {% endblock %}

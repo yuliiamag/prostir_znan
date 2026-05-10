@@ -2,7 +2,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import JoinTeacherByCodeForm, TeacherProfileEditForm
-from .models import TeacherProfile, StudentTeacherLink, CalendarEvent, StudentProfile,Homework, HomeworkMaterial,HomeworkSubmission,HomeworkSubmissionFile,Notification,Conversation, ChatMessage
+from .models import TeacherProfile, StudentTeacherLink, CalendarEvent, StudentProfile,Homework, HomeworkMaterial,HomeworkSubmission,HomeworkSubmissionFile,Notification,Conversation, ChatMessage,LessonChangeRequest
 from django.db.models import Q, Max
 from django.utils import timezone
 import calendar
@@ -669,8 +669,7 @@ def calendar_day(request, year, month, day):
 
     events = CalendarEvent.objects.filter(
         Q(teacher=request.user) | Q(student=request.user),
-        start_time__date=selected_date,
-        is_cancelled=False
+        start_time__date=selected_date
     ).order_by("start_time")
 
     homeworks = Homework.objects.filter(
@@ -1744,7 +1743,11 @@ def chat_view(request, conversation_id=None):
         ).update(is_read=True)
 
     if active_conversation:
-        messages = active_conversation.messages.select_related("sender")
+        messages = active_conversation.messages.select_related(
+            "sender",
+            "change_request",
+            "lesson"
+        )
 
         active_conversation.messages.exclude(sender=user).update(is_read=True)
 
@@ -1821,3 +1824,470 @@ def unread_notifications(request):
         "notifications_count": notifications_count,
         "messages_count": messages_count,
     })
+
+def get_lesson_receiver(lesson, user):
+    if lesson.teacher == user:
+        return lesson.student
+
+    if lesson.student == user:
+        return lesson.teacher
+
+    return None
+
+
+def get_or_create_lesson_conversation(lesson):
+    conversation, created = Conversation.objects.get_or_create(
+        teacher=lesson.teacher,
+        student=lesson.student
+    )
+    return conversation
+
+@login_required
+def request_lesson_reschedule(request, lesson_id):
+    lesson = get_object_or_404(CalendarEvent, id=lesson_id)
+
+    if request.user != lesson.teacher and request.user != lesson.student:
+        return redirect("dashboard")
+
+    receiver = get_lesson_receiver(lesson, request.user)
+
+    if not receiver:
+        messages.error(request, "Не вдалося знайти учасника уроку.")
+        return redirect("lesson_detail", lesson_id=lesson.id)
+
+    if request.method == "POST":
+        reason = request.POST.get("reason", "").strip()
+        comment = request.POST.get("comment", "").strip()
+        new_date = request.POST.get("new_date", "").strip()
+        new_time = request.POST.get("new_time", "").strip()
+
+        if not reason or not new_date or not new_time:
+            messages.error(request, "Заповни причину, дату і час.")
+            return redirect("lesson_detail", lesson_id=lesson.id)
+
+        proposed_start = datetime.strptime(
+            f"{new_date} {new_time}",
+            "%Y-%m-%d %H:%M"
+        )
+        proposed_start = timezone.make_aware(proposed_start)
+
+        if lesson.end_time:
+            duration = lesson.end_time - lesson.start_time
+        else:
+            duration = timedelta(minutes=60)
+
+        proposed_end = proposed_start + duration
+
+        conversation = get_or_create_lesson_conversation(lesson)
+
+        change_request = LessonChangeRequest.objects.create(
+            lesson=lesson,
+            conversation=conversation,
+            requested_by=request.user,
+            request_type="reschedule",
+            status="pending",
+            reason=reason,
+            comment=comment,
+            old_start_time=lesson.start_time,
+            old_end_time=lesson.end_time,
+            proposed_start_time=proposed_start,
+            proposed_end_time=proposed_end,
+        )
+
+        text = (
+            f" Запит на перенесення уроку\n\n"
+            f"Урок: {lesson.title}\n"
+            f"Було: {lesson.start_time.strftime('%d.%m.%Y %H:%M')}\n"
+            f"Запропоновано: {proposed_start.strftime('%d.%m.%Y %H:%M')}\n"
+            f"Причина: {reason}"
+        )
+
+        if comment:
+            text += f"\nКоментар: {comment}"
+
+        message = ChatMessage.objects.create(
+            conversation=conversation,
+            sender=request.user,
+            text=text,
+            message_type="lesson_reschedule_request",
+            lesson=lesson,
+            change_request=change_request
+        )
+
+        conversation.updated_at = message.created_at
+        conversation.save(update_fields=["updated_at"])
+
+        Notification.objects.create(
+            user=receiver,
+            title="Запит на перенесення уроку",
+            message=f"{request.user.first_name} просить перенести урок",
+            notification_type="message",
+            link=f"/messages/{conversation.id}/"
+        )
+
+        messages.success(request, "Запит на перенесення надіслано у чат.")
+        return redirect("chat_detail", conversation_id=conversation.id)
+
+    return redirect("lesson_detail", lesson_id=lesson.id)
+
+@login_required
+def cancel_lesson_request(request, lesson_id):
+    lesson = get_object_or_404(CalendarEvent, id=lesson_id)
+
+    if request.user != lesson.teacher and request.user != lesson.student:
+        return redirect("dashboard")
+
+    receiver = get_lesson_receiver(lesson, request.user)
+
+    if not receiver:
+        messages.error(request, "Не вдалося знайти учасника уроку.")
+        return redirect("lesson_detail", lesson_id=lesson.id)
+
+    if request.method == "POST":
+        reason = request.POST.get("reason", "").strip()
+        comment = request.POST.get("comment", "").strip()
+
+        if not reason:
+            messages.error(request, "Вкажи причину скасування.")
+            return redirect("lesson_detail", lesson_id=lesson.id)
+
+        conversation = get_or_create_lesson_conversation(lesson)
+
+        lesson.is_cancelled = True
+        lesson.save(update_fields=["is_cancelled"])
+
+        change_request = LessonChangeRequest.objects.create(
+            lesson=lesson,
+            conversation=conversation,
+            requested_by=request.user,
+            request_type="cancel",
+            status="cancelled",
+            reason=reason,
+            comment=comment,
+            old_start_time=lesson.start_time,
+            old_end_time=lesson.end_time,
+        )
+
+        text = (
+            f" Урок скасовано\n\n"
+            f"Урок: {lesson.title}\n"
+            f"Дата: {lesson.start_time.strftime('%d.%m.%Y %H:%M')}\n"
+            f"Причина: {reason}"
+        )
+
+        if comment:
+            text += f"\nКоментар: {comment}"
+
+        message = ChatMessage.objects.create(
+            conversation=conversation,
+            sender=request.user,
+            text=text,
+            message_type="lesson_cancelled",
+            lesson=lesson,
+            change_request=change_request
+        )
+
+        conversation.updated_at = message.created_at
+        conversation.save(update_fields=["updated_at"])
+
+        Notification.objects.create(
+            user=receiver,
+            title="Урок скасовано",
+            message=f"{request.user.first_name} скасував(ла) урок",
+            notification_type="message",
+            link=f"/messages/{conversation.id}/"
+        )
+
+        messages.success(request, "Урок скасовано, повідомлення надіслано у чат.")
+        return redirect("chat_detail", conversation_id=conversation.id)
+
+    return redirect("lesson_detail", lesson_id=lesson.id)
+
+@login_required
+def accept_reschedule_request(request, request_id):
+    change_request = get_object_or_404(LessonChangeRequest, id=request_id)
+    lesson = change_request.lesson
+    conversation = change_request.conversation
+
+    if request.user not in [lesson.teacher, lesson.student]:
+        return redirect("dashboard")
+
+    if request.user == change_request.requested_by:
+        messages.error(request, "Ти не можеш прийняти власний запит.")
+        return redirect("chat", conversation_id=conversation.id)
+
+    if change_request.status != "pending":
+        messages.error(request, "Цей запит вже неактивний.")
+        return redirect("chat", conversation_id=conversation.id)
+
+    lesson.start_time = change_request.proposed_start_time
+    lesson.end_time = change_request.proposed_end_time
+    lesson.is_cancelled = False
+    lesson.save(update_fields=["start_time", "end_time", "is_cancelled"])
+
+    change_request.status = "accepted"
+    change_request.responded_by = request.user
+    change_request.responded_at = timezone.now()
+    change_request.save()
+
+    receiver = change_request.requested_by
+
+    text = (
+        f" Перенесення уроку підтверджено\n\n"
+        f"Урок: {lesson.title}\n"
+        f"Новий час: {lesson.start_time.strftime('%d.%m.%Y %H:%M')}"
+    )
+
+    message = ChatMessage.objects.create(
+        conversation=conversation,
+        sender=request.user,
+        text=text,
+        message_type="lesson_reschedule_accepted",
+        lesson=lesson,
+        change_request=change_request
+    )
+
+    conversation.updated_at = message.created_at
+    conversation.save(update_fields=["updated_at"])
+
+    Notification.objects.create(
+        user=receiver,
+        title="Перенесення підтверджено",
+        message=f"{request.user.first_name} підтвердив(ла) новий час уроку",
+        notification_type="message",
+        link=f"/messages/{conversation.id}/"
+    )
+
+    messages.success(request, "Урок перенесено.")
+    return redirect("chat_detail", conversation_id=conversation.id)
+
+@login_required
+def decline_reschedule_request(request, request_id):
+    change_request = get_object_or_404(LessonChangeRequest, id=request_id)
+    lesson = change_request.lesson
+    conversation = change_request.conversation
+
+    if request.user not in [lesson.teacher, lesson.student]:
+        return redirect("dashboard")
+
+    if request.user == change_request.requested_by:
+        messages.error(request, "Ти не можеш відхилити власний запит.")
+        return redirect("chat", conversation_id=conversation.id)
+
+    if request.method == "POST":
+        comment = request.POST.get("comment", "").strip()
+
+        change_request.status = "declined"
+        change_request.responded_by = request.user
+        change_request.responded_at = timezone.now()
+        change_request.save()
+
+        receiver = change_request.requested_by
+
+        text = f"Запит на перенесення уроку відхилено\n\nУрок: {lesson.title}"
+
+        if comment:
+            text += f"\nКоментар: {comment}"
+
+        message = ChatMessage.objects.create(
+            conversation=conversation,
+            sender=request.user,
+            text=text,
+            message_type="lesson_reschedule_declined",
+            lesson=lesson,
+            change_request=change_request
+        )
+
+        conversation.updated_at = message.created_at
+        conversation.save(update_fields=["updated_at"])
+
+        Notification.objects.create(
+            user=receiver,
+            title="Перенесення відхилено",
+            message=f"{request.user.first_name} відхилив(ла) перенесення уроку",
+            notification_type="message",
+            link=f"/messages/{conversation.id}/"
+        )
+
+        messages.success(request, "Запит відхилено.")
+        return redirect("chat_detail", conversation_id=conversation.id)
+
+    return redirect("chat_detail", conversation_id=conversation.id)
+
+@login_required
+def counter_reschedule_request(request, request_id):
+    old_request = get_object_or_404(LessonChangeRequest, id=request_id)
+    lesson = old_request.lesson
+    conversation = old_request.conversation
+
+    if request.user not in [lesson.teacher, lesson.student]:
+        return redirect("dashboard")
+
+    if request.user == old_request.requested_by:
+        messages.error(request, "Ти не можеш відповісти на власний запит.")
+        return redirect("chat", conversation_id=conversation.id)
+
+    if request.method == "POST":
+        new_date = request.POST.get("new_date", "").strip()
+        new_time = request.POST.get("new_time", "").strip()
+        comment = request.POST.get("comment", "").strip()
+
+        if not new_date or not new_time:
+            messages.error(request, "Вкажи нову дату і час.")
+            return redirect("chat", conversation_id=conversation.id)
+
+        proposed_start = datetime.strptime(
+            f"{new_date} {new_time}",
+            "%Y-%m-%d %H:%M"
+        )
+        proposed_start = timezone.make_aware(proposed_start)
+
+        if lesson.end_time:
+            duration = lesson.end_time - lesson.start_time
+        else:
+            duration = timedelta(minutes=60)
+
+        proposed_end = proposed_start + duration
+
+        old_request.status = "countered"
+        old_request.responded_by = request.user
+        old_request.responded_at = timezone.now()
+        old_request.save()
+
+        new_request = LessonChangeRequest.objects.create(
+            lesson=lesson,
+            conversation=conversation,
+            requested_by=request.user,
+            request_type="reschedule",
+            status="pending",
+            reason="Запропоновано інший час",
+            comment=comment,
+            old_start_time=lesson.start_time,
+            old_end_time=lesson.end_time,
+            proposed_start_time=proposed_start,
+            proposed_end_time=proposed_end,
+        )
+
+        receiver = old_request.requested_by
+
+        text = (
+            f" Запропоновано інший час для уроку\n\n"
+            f"Урок: {lesson.title}\n"
+            f"Новий час: {proposed_start.strftime('%d.%m.%Y %H:%M')}"
+        )
+
+        if comment:
+            text += f"\nКоментар: {comment}"
+
+        message = ChatMessage.objects.create(
+            conversation=conversation,
+            sender=request.user,
+            text=text,
+            message_type="lesson_reschedule_counter",
+            lesson=lesson,
+            change_request=new_request
+        )
+
+        conversation.updated_at = message.created_at
+        conversation.save(update_fields=["updated_at"])
+
+        Notification.objects.create(
+            user=receiver,
+            title="Запропоновано інший час",
+            message=f"{request.user.first_name} запропонував(ла) інший час уроку",
+            notification_type="message",
+            link=f"/messages/{conversation.id}/"
+        )
+
+        messages.success(request, "Новий час надіслано у чат.")
+        return redirect("chat_detail", conversation_id=conversation.id)
+
+    return redirect("chat_detail", conversation_id=conversation.id)@login_required
+def counter_reschedule_request(request, request_id):
+    old_request = get_object_or_404(LessonChangeRequest, id=request_id)
+    lesson = old_request.lesson
+    conversation = old_request.conversation
+
+    if request.user not in [lesson.teacher, lesson.student]:
+        return redirect("dashboard")
+
+    if request.user == old_request.requested_by:
+        messages.error(request, "Ти не можеш відповісти на власний запит.")
+        return redirect("chat", conversation_id=conversation.id)
+
+    if request.method == "POST":
+        new_date = request.POST.get("new_date", "").strip()
+        new_time = request.POST.get("new_time", "").strip()
+        comment = request.POST.get("comment", "").strip()
+
+        if not new_date or not new_time:
+            messages.error(request, "Вкажи нову дату і час.")
+            return redirect("chat", conversation_id=conversation.id)
+
+        proposed_start = datetime.strptime(
+            f"{new_date} {new_time}",
+            "%Y-%m-%d %H:%M"
+        )
+        proposed_start = timezone.make_aware(proposed_start)
+
+        if lesson.end_time:
+            duration = lesson.end_time - lesson.start_time
+        else:
+            duration = timedelta(minutes=60)
+
+        proposed_end = proposed_start + duration
+
+        old_request.status = "countered"
+        old_request.responded_by = request.user
+        old_request.responded_at = timezone.now()
+        old_request.save()
+
+        new_request = LessonChangeRequest.objects.create(
+            lesson=lesson,
+            conversation=conversation,
+            requested_by=request.user,
+            request_type="reschedule",
+            status="pending",
+            reason="Запропоновано інший час",
+            comment=comment,
+            old_start_time=lesson.start_time,
+            old_end_time=lesson.end_time,
+            proposed_start_time=proposed_start,
+            proposed_end_time=proposed_end,
+        )
+
+        receiver = old_request.requested_by
+
+        text = (
+            f" Запропоновано інший час для уроку\n\n"
+            f"Урок: {lesson.title}\n"
+            f"Новий час: {proposed_start.strftime('%d.%m.%Y %H:%M')}"
+        )
+
+        if comment:
+            text += f"\nКоментар: {comment}"
+
+        message = ChatMessage.objects.create(
+            conversation=conversation,
+            sender=request.user,
+            text=text,
+            message_type="lesson_reschedule_counter",
+            lesson=lesson,
+            change_request=new_request
+        )
+
+        conversation.updated_at = message.created_at
+        conversation.save(update_fields=["updated_at"])
+
+        Notification.objects.create(
+            user=receiver,
+            title="Запропоновано інший час",
+            message=f"{request.user.first_name} запропонував(ла) інший час уроку",
+            notification_type="message",
+            link=f"/messages/{conversation.id}/"
+        )
+
+        messages.success(request, "Новий час надіслано у чат.")
+        return redirect("chat_detail", conversation_id=conversation.id)
+
+    return redirect("chat_detail", conversation_id=conversation.id)
