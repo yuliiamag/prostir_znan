@@ -37,7 +37,6 @@ urlpatterns = [
     path("teacher/statistics/", views.teacher_statistics, name="teacher_statistics"),
     path("student/statistics/", views.student_statistics, name="student_statistics"),
     path("notifications/", views.notifications_view, name="notifications"),
-    path("student/statistics/api/", views.student_statistics_api, name="student_statistics_api"),
     path("api/notifications/list/", views.unread_notifications_api, name="unread_notifications_api"),
     path("api/notifications/unread/", views.unread_notifications, name="unread_notifications"),
     path("api/notifications/read/<int:pk>/", views.mark_notification_read, name="mark_notification_read"),
