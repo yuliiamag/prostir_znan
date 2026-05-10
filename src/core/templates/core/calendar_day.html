@@ -460,7 +460,13 @@
         </div>
 
         <div class="lc-body">
-          <div class="lc-title">{{ event.title }}</div>
+          <div class="lc-title-row">
+            <div class="lc-title">{{ event.title }}</div>
+
+            {% if event.is_cancelled %}
+              <span class="cancelled-label">Скасовано</span>
+            {% endif %}
+          </div>
 
           <div class="lc-meta">
             {% if event.student and event.student != request.user %}

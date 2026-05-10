@@ -435,28 +435,67 @@
       <div class="messages-wrap" id="messages">
 
         {% for msg in messages %}
-          <div class="msg-row {% if msg.sender == request.user %}sent{% endif %}">
-            <div>
-              <div class="msg-bubble">
-                {{ msg.text|linebreaksbr }}
+  <div class="msg-row {% if msg.sender == request.user %}sent{% endif %}">
+    <div>
+      <div class="msg-bubble">
+        {{ msg.text|linebreaksbr }}
 
-                {% if msg.file %}
-                  <div class="msg-attachment">
-                    <a href="{{ msg.file.url }}" target="_blank">
-                      📎 {{ msg.file.name|cut:"chat_files/" }}
-                    </a>
-                  </div>
-                {% endif %}
-              </div>
-
-              <div class="msg-time">
-                {{ msg.created_at|time:"H:i" }}
-              </div>
-            </div>
+        {% if msg.file %}
+          <div class="msg-attachment">
+            <a href="{{ msg.file.url }}" target="_blank">
+              📎 {{ msg.file.name|cut:"chat_files/" }}
+            </a>
           </div>
-        {% empty %}
-          <div class="chat-empty">Повідомлень ще немає. Напиши перше повідомлення.</div>
-        {% endfor %}
+        {% endif %}
+
+        {% if msg.change_request %}
+          {% if msg.change_request.status == "pending" and msg.sender != request.user %}
+            <div class="request-actions">
+              <form method="post" action="{% url 'accept_reschedule_request' msg.change_request.id %}">
+                {% csrf_token %}
+                <button class="accept-btn">Прийняти</button>
+              </form>
+
+              <button type="button" class="counter-btn" onclick="openCounterModal('{{ msg.change_request.id }}')">
+                Інший час
+              </button>
+
+              <form method="post" action="{% url 'decline_reschedule_request' msg.change_request.id %}">
+                {% csrf_token %}
+                <button class="decline-btn">Відхилити</button>
+              </form>
+            </div>
+
+            <div class="counter-modal" id="counter-{{ msg.change_request.id }}">
+              <form method="post" action="{% url 'counter_reschedule_request' msg.change_request.id %}">
+                {% csrf_token %}
+
+                <label>Дата</label>
+                <input type="date" name="new_date" required>
+
+                <label>Час</label>
+                <input type="time" name="new_time" required>
+
+                <label>Коментар</label>
+                <textarea name="comment" placeholder="Наприклад: можу о 18:00"></textarea>
+
+                <button type="submit">Надіслати</button>
+              </form>
+            </div>
+          {% endif %}
+        {% endif %}
+      </div>
+
+      <div class="msg-time">
+        {{ msg.created_at|time:"H:i" }}
+      </div>
+    </div>
+  </div>
+{% empty %}
+  <div class="chat-empty">Повідомлень ще немає. Напиши перше повідомлення.</div>
+{% endfor %}
+
+
 
       </div>
 
@@ -496,14 +535,28 @@
   </div>
 </div>
 
-
 <script>
-  function getCSRFToken() {
+function openCounterModal(id) {
+  document.getElementById("counter-" + id).classList.toggle("open");
+}
+
+function getCSRFToken() {
   return document.cookie
     .split("; ")
     .find(row => row.startsWith("csrftoken="))
     ?.split("=")[1];
 }
+
+function scrollChatToBottom() {
+  const wrap = document.getElementById("messages");
+
+  if (wrap) {
+    setTimeout(() => {
+      wrap.scrollTop = wrap.scrollHeight;
+    }, 100);
+  }
+}
+
 function sendMessage() {
   const input = document.getElementById("msg-input");
   const fileInput = document.getElementById("file-input");
@@ -529,8 +582,6 @@ function sendMessage() {
   })
   .then(res => res.json())
   .then(data => {
-    console.log(data);
-
     if (data.error) {
       alert(data.error);
       return;
@@ -544,9 +595,7 @@ function sendMessage() {
   });
 }
 
-window.onload = () => {
-  const wrap = document.getElementById("messages");
-  if (wrap) wrap.scrollTop = wrap.scrollHeight;
-};
+document.addEventListener("DOMContentLoaded", scrollChatToBottom);
+window.addEventListener("load", scrollChatToBottom);
 </script>
 {% endblock %}

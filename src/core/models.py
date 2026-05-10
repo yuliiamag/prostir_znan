@@ -226,6 +226,8 @@ class Notification(models.Model):
         ("homework_submitted", "Домашнє завдання здано"),
         ("homework_checked", "Домашнє завдання перевірено"),
         ("message", "Нове повідомлення"),
+        ("lesson_rescheduled", "Урок перенесено"),
+        ("lesson_cancelled", "Урок скасовано"),
     ]
 
     user = models.ForeignKey(
@@ -268,19 +270,60 @@ class Conversation(models.Model):
 
 
 class ChatMessage(models.Model):
+
+    MESSAGE_TYPES = [
+        ("text", "Текст"),
+        ("lesson_reschedule_request", "Запит на перенесення"),
+        ("lesson_cancelled", "Урок скасовано"),
+        ("lesson_reschedule_accepted", "Перенесення прийнято"),
+        ("lesson_reschedule_declined", "Перенесення відхилено"),
+        ("lesson_reschedule_counter", "Запропоновано інший час"),
+    ]
+
     conversation = models.ForeignKey(
         Conversation,
         on_delete=models.CASCADE,
         related_name="messages"
     )
+
+    message_type = models.CharField(
+        max_length=50,
+        choices=MESSAGE_TYPES,
+        default="text"
+    )
+
+    lesson = models.ForeignKey(
+        CalendarEvent,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="chat_messages"
+    )
+
+    change_request = models.ForeignKey(
+        "LessonChangeRequest",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="chat_messages"
+    )
+
     sender = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name="sent_chat_messages"
     )
+
     text = models.TextField()
-    file = models.FileField(upload_to="chat_files/", blank=True, null=True)
+
+    file = models.FileField(
+        upload_to="chat_files/",
+        blank=True,
+        null=True
+    )
+
     is_read = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -289,4 +332,62 @@ class ChatMessage(models.Model):
     def __str__(self):
         return self.text[:40]
 
+
+class LessonChangeRequest(models.Model):
+    REQUEST_TYPES = [
+        ("reschedule", "Перенесення"),
+        ("cancel", "Скасування"),
+    ]
+
+    STATUSES = [
+        ("pending", "Очікує відповіді"),
+        ("accepted", "Прийнято"),
+        ("declined", "Відхилено"),
+        ("countered", "Запропоновано інший час"),
+        ("cancelled", "Скасовано"),
+    ]
+
+    lesson = models.ForeignKey(
+        CalendarEvent,
+        on_delete=models.CASCADE,
+        related_name="change_requests"
+    )
+
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.CASCADE,
+        related_name="lesson_requests"
+    )
+
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="lesson_change_requests"
+    )
+
+    request_type = models.CharField(max_length=20, choices=REQUEST_TYPES)
+    status = models.CharField(max_length=20, choices=STATUSES, default="pending")
+
+    reason = models.CharField(max_length=255)
+    comment = models.TextField(blank=True)
+
+    old_start_time = models.DateTimeField()
+    old_end_time = models.DateTimeField(null=True, blank=True)
+
+    proposed_start_time = models.DateTimeField(null=True, blank=True)
+    proposed_end_time = models.DateTimeField(null=True, blank=True)
+
+    responded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="responded_lesson_change_requests"
+    )
+
+    responded_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.get_request_type_display()} — {self.lesson.title}"
 
