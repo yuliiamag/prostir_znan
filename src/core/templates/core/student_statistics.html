@@ -39,7 +39,7 @@
   border: 1px solid #d4e2cf;
   border-radius: 16px;
   padding: 6px;
-  margin-bottom: 22px;
+
 }
 
 .period-tab {
@@ -393,7 +393,48 @@
   border-radius: 999px;
   overflow: hidden;
 }
+.stats-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 26px;
+}
 
+.achievements-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 18px 24px;
+  border-radius: 22px;
+
+  background: #ffffff;
+  border: 1px solid #d7e5c6;
+
+  color: #0c5f4f;
+  text-decoration: none;
+  font-size: 17px;
+  font-weight: 900;
+
+  box-shadow: 0 10px 24px rgba(32,70,55,.06);
+  transition: .2s ease;
+}
+.achievements-btn:hover {
+  transform: translateY(-2px);
+  background: #f8faf7;
+}
+
+@media (max-width: 900px) {
+  .stats-top-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .achievements-btn {
+    justify-content: center;
+  }
+}
 .achievement-fill {
   height: 100%;
   background: #0c5f4f;
@@ -420,11 +461,30 @@
     <p>Тут зібрано твої уроки, домашні завдання та прогрес за обраний період.</p>
   </section>
 
+  <div class="stats-top-row">
+
   <div class="period-tabs">
-  <a href="?period=week" class="period-tab {% if period == 'week' %}active{% endif %}">Тиждень</a>
-  <a href="?period=month" class="period-tab {% if period == 'month' %}active{% endif %}">Місяць</a>
-  <a href="?period=year" class="period-tab {% if period == 'year' %}active{% endif %}">Рік</a>
-  <a href="?period=all" class="period-tab {% if period == 'all' %}active{% endif %}">Весь час</a>
+    <a href="?period=week" class="period-tab {% if period == 'week' %}active{% endif %}">
+      Тиждень
+    </a>
+
+    <a href="?period=month" class="period-tab {% if period == 'month' %}active{% endif %}">
+      Місяць
+    </a>
+
+    <a href="?period=year" class="period-tab {% if period == 'year' %}active{% endif %}">
+      Рік
+    </a>
+
+    <a href="?period=all" class="period-tab {% if period == 'all' %}active{% endif %}">
+      Весь час
+    </a>
+  </div>
+
+  <a href="{% url 'student_achievements' %}" class="achievements-btn">
+     Мої досягнення
+  </a>
+
 </div>
 
   <section class="stats-grid">
@@ -531,55 +591,7 @@
     </div>
   {% endfor %}
 </div>
-  </section>
-  <section class="achievements-card">
-  <div class="achievements-head">
-   <a href="{% url 'student_achievements' %}" class="hero-btn btn-ghost">
-  Мої досягнення
-</a>
-    <span>Твій навчальний прогрес</span>
-  </div>
 
-  <div class="achievement-grid">
-
-    <div class="achievement-item {% if total_lessons >= 1 %}done{% else %}locked{% endif %}">
-      <div class="achievement-icon">🌱</div>
-      <div class="achievement-title">Перший крок</div>
-      <div class="achievement-text">Проведено перший урок</div>
-      <div class="achievement-progress">
-        <div class="achievement-fill" style="width: {% if total_lessons >= 1 %}100{% else %}0{% endif %}%;"></div>
-      </div>
-    </div>
-
-    <div class="achievement-item {% if total_lessons >= 5 %}done{% else %}locked{% endif %}">
-      <div class="achievement-icon">📚</div>
-      <div class="achievement-title">Активний учень</div>
-      <div class="achievement-text">{{ total_lessons }} з 5 уроків</div>
-      <div class="achievement-progress">
-        <div class="achievement-fill" style="width: {% widthratio total_lessons 5 100 %}%;"></div>
-      </div>
-    </div>
-
-    <div class="achievement-item {% if submitted_homeworks >= 5 %}done{% else %}locked{% endif %}">
-      <div class="achievement-icon">✅</div>
-      <div class="achievement-title">Вчасна здача</div>
-      <div class="achievement-text">{{ submitted_homeworks }} з 5 зданих ДЗ</div>
-      <div class="achievement-progress">
-        <div class="achievement-fill" style="width: {% widthratio submitted_homeworks 5 100 %}%;"></div>
-      </div>
-    </div>
-
-    <div class="achievement-item {% if late_homeworks == 0 and total_homeworks > 0 %}done{% else %}locked{% endif %}">
-      <div class="achievement-icon">🎯</div>
-      <div class="achievement-title">Без прострочень</div>
-      <div class="achievement-text">Немає прострочених завдань</div>
-      <div class="achievement-progress">
-        <div class="achievement-fill" style="width: {% if late_homeworks == 0 and total_homeworks > 0 %}100{% else %}0{% endif %}%;"></div>
-      </div>
-    </div>
-
-  </div>
-</section>
 
   <section class="panel">
     <h3>Останні домашні завдання</h3>

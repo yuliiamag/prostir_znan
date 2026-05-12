@@ -19,6 +19,9 @@ from .google_calendar import credentials_to_dict, sync_lesson_to_google_calendar
 from django.db.models import Count
 from django.db.models.functions import TruncDate, TruncWeek, TruncMonth, TruncYear
 from django.views.decorators.http import require_POST
+from django.core.mail import send_mail
+from .google_calendar import update_lesson_in_google_calendar, delete_lesson_from_google_calendar
+from core.achievements import build_achievements
 
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
@@ -593,6 +596,9 @@ def create_lesson(request, lesson_id=None):
                     lesson.student = selected_student.user
                     lesson.save()
 
+                    if lesson.google_event_id:
+                        update_lesson_in_google_calendar(request, lesson)
+
                     delete_material_ids = request.POST.getlist("delete_material_ids")
 
                     if delete_material_ids:
@@ -623,6 +629,22 @@ def create_lesson(request, lesson_id=None):
                         teacher=request.user,
                         student=selected_student.user,
                     )
+                    if lesson.student and lesson.student.email:
+                        send_mail(
+                            subject="Нове заняття в Куточок знань",
+                            message=(
+                                f"Для вас створено нове заняття: {lesson.title}\n\n"
+                                f"Дата і час: {lesson.start_time.strftime('%d.%m.%Y %H:%M')}\n"
+                                f"Вчитель: {lesson.teacher.first_name} {lesson.teacher.last_name}\n\n"
+                                f"Перейдіть у кабінет «Куточок знань», щоб переглянути деталі заняття."
+                            ),
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            recipient_list=[lesson.student.email],
+                            fail_silently=False,
+                        )
+
+
+
                     files = request.FILES.getlist("materials")
 
                     for file in files:
@@ -945,6 +967,7 @@ def create_homework(request, pk=None):
             homework.allow_late_submission = allow_late
             homework.allow_file_answer = require_file
             homework.save()
+
         else:
             homework = Homework.objects.create(
                 teacher=request.user,
@@ -957,25 +980,23 @@ def create_homework(request, pk=None):
                 allow_file_answer=require_file,
             )
 
-            if homework:
-                homework.student = student_profile.user
-                homework.title = title
-                homework.description = description
-                homework.deadline = deadline
-                homework.allow_late_submission = allow_late
-                homework.allow_file_answer = require_file
-                homework.save()
-            else:
-                homework = Homework.objects.create(
-                    teacher=request.user,
-                    student=student_profile.user,
-                    title=title,
-                    description=description,
-                    deadline=deadline,
-                    status="assigned",
-                    allow_late_submission=allow_late,
-                    allow_file_answer=require_file,
+
+            if homework.student and homework.student.email:
+                send_mail(
+                    subject="Нове домашнє завдання | Куточок знань",
+                    message=(
+                        f"Для вас створено нове домашнє завдання: {homework.title}\n\n"
+                        f"Термін здачі: "
+                        f"{homework.deadline.strftime('%d.%m.%Y %H:%M') if homework.deadline else 'не вказано'}\n"
+                        f"Вчитель: {homework.teacher.first_name} {homework.teacher.last_name}\n\n"
+                        f"Перейдіть у кабінет «Куточок знань», щоб переглянути завдання."
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[homework.student.email],
+                    fail_silently=False,
                 )
+
+
 
             delete_ids = request.POST.getlist("delete_material_ids")
             Notification.objects.create(
@@ -1019,16 +1040,25 @@ def create_homework(request, pk=None):
         "is_edit": bool(homework),
         "selected_student_id": selected_student_id,
     })
+
+
 @login_required
 def homework_detail(request, pk):
     homework = get_object_or_404(Homework, pk=pk)
+
+    is_deadline_passed = (
+            homework.deadline
+            and timezone.now() > homework.deadline
+    )
+
     if (
             homework.status == "assigned"
-            and homework.deadline
-            and timezone.now() > homework.deadline
+            and is_deadline_passed
     ):
         homework.status = "late"
         homework.save()
+
+
 
     is_teacher = request.user == homework.teacher
     is_student = request.user == homework.student
@@ -1147,6 +1177,7 @@ def homework_detail(request, pk):
         "edit_mode": edit_mode,
         "teacher_profile": teacher_profile,
         "student_profile": student_profile,
+        "is_deadline_passed": is_deadline_passed,
     })
 
 @login_required
@@ -2042,6 +2073,8 @@ def cancel_lesson_request(request, lesson_id):
         conversation = get_or_create_lesson_conversation(lesson)
 
         lesson.is_cancelled = True
+        if lesson.google_event_id:
+            delete_lesson_from_google_calendar(request, lesson)
         lesson.save(update_fields=["is_cancelled"])
 
         change_request = LessonChangeRequest.objects.create(
@@ -2146,7 +2179,7 @@ def accept_reschedule_request(request, request_id):
         link=f"/messages/{conversation.id}/"
     )
 
-    messages.success(request, "Урок перенесено.")
+   # messages.success(request, "Урок перенесено.")
     return redirect("chat_detail", conversation_id=conversation.id)
 
 @login_required
@@ -2411,106 +2444,228 @@ def submit_lesson_feedback(request, lesson_id):
             )
 
     return redirect("lesson_detail", lesson_id=lesson.id)
-
 @login_required
 def student_achievements(request):
     student = request.user
     now = timezone.now()
+    today = timezone.localdate()
 
-    total_lessons = CalendarEvent.objects.filter(
+    lessons = CalendarEvent.objects.filter(
         student=student,
         event_type="lesson",
-        start_time__lt=now,
         is_cancelled=False
-    ).count()
+    )
 
-    total_homeworks = Homework.objects.filter(student=student).count()
+    completed_lessons = lessons.filter(start_time__lt=now)
+    total_lessons = completed_lessons.count()
 
-    submitted_homeworks = Homework.objects.filter(
-        student=student,
+    homeworks = Homework.objects.filter(student=student)
+    total_homeworks = homeworks.count()
+
+    submitted_homeworks = homeworks.filter(
         status__in=["submitted", "checked"]
     ).count()
 
-    checked_homeworks = Homework.objects.filter(
-        student=student,
-        status="checked"
-    ).count()
-
-    late_homeworks = Homework.objects.filter(
-        student=student,
-        status="late"
-    ).count()
+    checked_homeworks = homeworks.filter(status="checked").count()
+    late_homeworks = homeworks.filter(status="late").count()
 
     completion_percent = 0
     if total_homeworks > 0:
         completion_percent = round((submitted_homeworks / total_homeworks) * 100)
 
-    achievements = [
-        {
-            "icon": "🌱",
-            "title": "Перший крок",
-            "description": "Проведи свій перший урок на платформі.",
-            "current": total_lessons,
-            "target": 1,
-        },
-        {
-            "icon": "📚",
-            "title": "Активний учень",
-            "description": "Відвідай 5 уроків.",
-            "current": total_lessons,
-            "target": 5,
-        },
-        {
-            "icon": "🔥",
-            "title": "Стабільний темп",
-            "description": "Відвідай 10 уроків.",
-            "current": total_lessons,
-            "target": 10,
-        },
-        {
-            "icon": "✅",
-            "title": "Відповідальний",
-            "description": "Здай 5 домашніх завдань.",
-            "current": submitted_homeworks,
-            "target": 5,
-        },
-        {
-            "icon": "🎯",
-            "title": "Без прострочень",
-            "description": "Не мати прострочених завдань.",
-            "current": 1 if late_homeworks == 0 and total_homeworks > 0 else 0,
-            "target": 1,
-        },
-        {
-            "icon": "⭐",
-            "title": "Перевірений результат",
-            "description": "Отримай 5 перевірених робіт.",
-            "current": checked_homeworks,
-            "target": 5,
-        },
-    ]
+    submissions = HomeworkSubmission.objects.filter(
+        student=student
+    ).select_related("homework").order_by("-submitted_at")
 
-    for achievement in achievements:
-        progress = 0
+    on_time_homeworks = 0
+    same_day_homeworks = 0
+    night_homeworks = 0
+    morning_homeworks = 0
+    late_submissions = 0
 
-        if achievement["target"] > 0:
-            progress = round((achievement["current"] / achievement["target"]) * 100)
+    for submission in submissions:
+        homework = submission.homework
 
-        achievement["progress"] = min(progress, 100)
-        achievement["is_done"] = achievement["current"] >= achievement["target"]
+        if homework.deadline:
+            if submission.submitted_at <= homework.deadline:
+                on_time_homeworks += 1
+            else:
+                late_submissions += 1
+        else:
+            on_time_homeworks += 1
 
-    earned_count = sum(1 for item in achievements if item["is_done"])
+        if submission.submitted_at.date() == homework.created_at.date():
+            same_day_homeworks += 1
+
+        submit_hour = timezone.localtime(submission.submitted_at).hour
+
+        if submit_hour >= 22:
+            night_homeworks += 1
+
+        if submit_hour < 8:
+            morning_homeworks += 1
+
+    last_7_days = now - timedelta(days=7)
+    last_14_days = now - timedelta(days=14)
+    last_30_days = now - timedelta(days=30)
+
+    lessons_last_7_days = completed_lessons.filter(
+        start_time__gte=last_7_days
+    ).count()
+
+    lessons_last_14_days = completed_lessons.filter(
+        start_time__gte=last_14_days
+    ).count()
+
+    lessons_last_30_days = completed_lessons.filter(
+        start_time__gte=last_30_days
+    ).count()
+
+    active_weeks = 0
+
+    for i in range(8):
+        week_start = today - timedelta(days=today.weekday()) - timedelta(weeks=i)
+        week_end = week_start + timedelta(days=6)
+
+        has_lessons = completed_lessons.filter(
+            start_time__date__gte=week_start,
+            start_time__date__lte=week_end
+        ).exists()
+
+        if has_lessons:
+            active_weeks += 1
+
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+
+    weekly_goal_current = completed_lessons.filter(
+        start_time__date__gte=week_start,
+        start_time__date__lte=week_end
+    ).count()
+
+    weekly_goal_target = 4
+
+    weekly_goal_percent = min(
+        round((weekly_goal_current / weekly_goal_target) * 100),
+        100
+    )
+
+    streak_days = lessons_last_7_days
+    streak_record = max(
+        lessons_last_7_days,
+        lessons_last_14_days,
+        lessons_last_30_days
+    )
+    streak_to_record = max(streak_record - streak_days, 0)
+
+    attendance_percent = completion_percent
+
+    submissions = HomeworkSubmission.objects.filter(
+        student=request.user
+    ).select_related("homework").order_by("-submitted_at")
+
+
+    homework_streak = 0
+    homework_streak_record = 0
+
+    for submission in submissions:
+        homework = submission.homework
+
+        if not homework or not homework.deadline:
+            continue
+
+        if submission.submitted_at <= homework.deadline:
+            homework_streak += 1
+        else:
+            break
+
+    submissions_asc = HomeworkSubmission.objects.filter(
+        student=request.user
+    ).select_related("homework").order_by("submitted_at")
+
+    current_record = 0
+    homework_streak_record = 0
+
+    for submission in submissions_asc:
+        homework = submission.homework
+
+        if not homework or not homework.deadline:
+            continue
+
+        if submission.submitted_at <= homework.deadline:
+            current_record += 1
+            homework_streak_record = max(
+                homework_streak_record,
+                current_record
+            )
+        else:
+            current_record = 0
+
+
+
+    next_streak_goal = homework_streak + 1
+
+
+
+    stats = {
+        "total_lessons": total_lessons,
+        "submitted_homeworks": submitted_homeworks,
+        "checked_homeworks": checked_homeworks,
+        "completion_percent": completion_percent,
+
+        "lessons_last_7_days": lessons_last_7_days,
+        "lessons_last_14_days": lessons_last_14_days,
+        "lessons_last_30_days": lessons_last_30_days,
+
+        "on_time_homeworks": on_time_homeworks,
+        "same_day_homeworks": same_day_homeworks,
+
+        "night_homeworks": night_homeworks,
+        "morning_homeworks": morning_homeworks,
+
+        "active_weeks": active_weeks,
+
+        "no_late_homeworks": 1 if late_homeworks == 0 and total_homeworks > 0 else 0,
+        "late_submissions": late_submissions,
+
+        "returns_after_break": 0,
+        "messages_count": 0,
+        "homework_streak": homework_streak,
+    }
+
+    achievements = build_achievements(stats)
+
+    earned_count = sum(
+        1 for item in achievements if item["is_done"]
+    )
+
+    achievement_history = [
+        item for item in achievements if item["is_done"]
+    ][-5:]
 
     context = {
         "achievements": achievements,
+        "achievement_history": achievement_history,
         "earned_count": earned_count,
         "total_count": len(achievements),
+
         "total_lessons": total_lessons,
         "total_homeworks": total_homeworks,
         "submitted_homeworks": submitted_homeworks,
         "checked_homeworks": checked_homeworks,
         "late_homeworks": late_homeworks,
         "completion_percent": completion_percent,
+
+        "streak_days": streak_days,
+        "streak_record": streak_record,
+        "streak_to_record": streak_to_record,
+        "attendance_percent": attendance_percent,
+
+        "weekly_goal_current": weekly_goal_current,
+        "weekly_goal_target": weekly_goal_target,
+        "weekly_goal_percent": weekly_goal_percent,
+        "homework_streak": homework_streak,
+        "homework_streak_record": homework_streak_record,
     }
 
     return render(request, "core/student_achievements.html", context)

@@ -135,7 +135,7 @@
                     📄 {{ file.file.name|cut:"homework_answers/" }}
                   </a>
 
-                  {% if homework.status != "checked" %}
+                  {% if homework.status != "checked" and not is_deadline_passed or homework.allow_late_submission %}
                     <form method="post">
                       {% csrf_token %}
                       <input type="hidden" name="action" value="delete_submission_file">
@@ -155,7 +155,14 @@
             <a href="?edit=1" class="edit-answer-btn">
                Редагувати відповідь
             </a>
-          {% endif %}
+
+        {% elif is_deadline_passed and not homework.allow_late_submission %}
+
+        <div class="deadline-closed">
+          ⏰ Термін здачі минув. Вчитель не дозволив пізню здачу.
+        </div>
+
+      {% endif %}
 
   {% if not submission or edit_mode %}
     <form method="post" enctype="multipart/form-data" class="submit-form">
@@ -416,6 +423,18 @@
   max-width: 980px;
   margin: 0 auto;
   padding: 24px 16px 50px;
+}
+.deadline-closed {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: 16px;
+
+  background: #fff3f3;
+  border: 1px solid #ffcfcf;
+
+  color: #b42323;
+  font-size: 14px;
+  font-weight: 700;
 }
 .person-link {
   display: block;

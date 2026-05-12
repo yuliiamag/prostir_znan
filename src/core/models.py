@@ -78,6 +78,7 @@ class CalendarEvent(models.Model):
     is_synced_with_google = models.BooleanField(default=False)
     reminder_email_sent = models.BooleanField(default=False)
 
+
     teacher = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
