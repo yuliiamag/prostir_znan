@@ -154,7 +154,7 @@ ACCOUNT_CONFIRM_EMAIL_ON_GET = True
 ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = "/dashboard/"
 ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = "/dashboard/"
 
-DEFAULT_FROM_EMAIL = "MathSpace <ssvit.svichok@gmail.com>"
+DEFAULT_FROM_EMAIL = "Куточок знань <ssvit.svichok@gmail.com>"
 
 ACCOUNT_SIGNUP_FORM_CLASS = "core.forms.CustomSignupForm"
 

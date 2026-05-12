@@ -121,6 +121,69 @@ def sync_lesson_to_google_calendar_for_participants(lesson):
 
     for user in users:
         try:
-            sync_lesson_to_google_calendar_for_user(user, lesson)
+            created_event = sync_lesson_to_google_calendar_for_user(user, lesson)
+
+            if created_event and user == lesson.teacher:
+                lesson.google_event_id = created_event.get("id")
+                lesson.is_synced_with_google = True
+                lesson.save(update_fields=["google_event_id", "is_synced_with_google"])
+
         except Exception as e:
             print(f"GOOGLE SYNC ERROR FOR USER {user.id}:", e)
+def update_lesson_in_google_calendar(request, lesson):
+    service = get_google_calendar_service(request)
+
+    if service is None:
+        print("Google Calendar не підключено")
+        return None
+
+    if not lesson.google_event_id:
+        print("Урок не має google_event_id")
+        return None
+
+    end_time = lesson.end_time or lesson.start_time + timedelta(minutes=60)
+
+    event_body = {
+        "summary": lesson.title,
+        "description": lesson.description or "",
+        "start": {
+            "dateTime": lesson.start_time.isoformat(),
+            "timeZone": "Europe/Kyiv",
+        },
+        "end": {
+            "dateTime": end_time.isoformat(),
+            "timeZone": "Europe/Kyiv",
+        },
+    }
+
+    if lesson.meeting_link:
+        event_body["location"] = lesson.meeting_link
+
+    updated_event = service.events().update(
+        calendarId="primary",
+        eventId=lesson.google_event_id,
+        body=event_body,
+    ).execute()
+
+    return updated_event
+
+
+def delete_lesson_from_google_calendar(request, lesson):
+    service = get_google_calendar_service(request)
+
+    if service is None:
+        print("Google Calendar не підключено")
+        return None
+
+    if not lesson.google_event_id:
+        print("Урок не має google_event_id")
+        return None
+
+    service.events().delete(
+        calendarId="primary",
+        eventId=lesson.google_event_id,
+    ).execute()
+
+    lesson.google_event_id = None
+    lesson.is_synced_with_google = False
+    lesson.save(update_fields=["google_event_id", "is_synced_with_google"])

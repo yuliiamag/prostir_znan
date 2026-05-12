@@ -53,13 +53,21 @@
   background: var(--main-bg);
 }
 
+
     .sidebar {
-      background: var(--sidebar);
-      color: var(--white);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
+  width: 250px;
+  height: 100vh;
+
+  background: var(--sidebar);
+
+  display: flex;
+  flex-direction: column;
+
+  position: sticky;
+  top: 0;
+
+  overflow: hidden;
+}
 
 
     .sidebar-top {
@@ -428,7 +436,7 @@
           {% if request.user.student_profile %}
             <a href="{% url 'student_statistics' %}">
               <span class="menu-icon"></span>
-              <span>Мій прогрес</span>
+              <span>Статистика</span>
             </a>
           {% endif %}
 
