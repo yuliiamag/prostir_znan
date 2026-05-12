@@ -339,7 +339,31 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="sidebar-top">
-        <a href="{% url 'home' %}" class="brand">EduSpace</a>
+        <div class="logo">
+  {% if user.is_authenticated %}
+
+    {% if user.teacher_profile %}
+      <a href="{% url 'teacher_dashboard' %}" class="brand">
+        Куточок знань
+      </a>
+
+    {% elif user.student_profile %}
+      <a href="{% url 'student_dashboard' %}" class="brand">
+        Куточок знань
+      </a>
+
+    {% else %}
+      <a href="{% url 'landing' %}" class="brand">
+        Куточок знань
+      </a>
+    {% endif %}
+
+  {% else %}
+    <a href="{% url 'landing' %}" class="brand">
+      Куточок знань
+    </a>
+  {% endif %}
+</div>
         <div class="sidebar-subtitle">
           {% if user.is_authenticated %}
 
@@ -349,10 +373,23 @@
         </div>
 
         <nav class="menu">
-  <a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">
-    <span class="menu-icon"></span>
-    <span>Головна</span>
-  </a>
+<!--  <a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">-->
+<!--    <span class="menu-icon"></span>-->
+<!--    <span>Головна</span>-->
+<!--  </a>-->
+            {% if user.is_authenticated %}
+    {% if user.teacher_profile %}
+      <a href="{% url 'teacher_dashboard' %}">
+        <span class="menu-icon"></span>
+        <span>Моя сторінка</span>
+      </a>
+    {% elif user.student_profile %}
+      <a href="{% url 'student_dashboard' %}">
+        <span class="menu-icon"></span>
+        <span>Моя сторінка</span>
+      </a>
+    {% endif %}
+  {% endif %}
 
   <a href="{% url 'lessons' %}" class="{% if request.path == '/lessons/' %}active{% endif %}">
   <span class="menu-icon"></span>

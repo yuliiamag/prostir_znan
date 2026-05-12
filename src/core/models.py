@@ -391,3 +391,56 @@ class LessonChangeRequest(models.Model):
     def __str__(self):
         return f"{self.get_request_type_display()} — {self.lesson.title}"
 
+class LessonFeedback(models.Model):
+    lesson = models.OneToOneField(
+        CalendarEvent,
+        on_delete=models.CASCADE,
+        related_name="feedback"
+    )
+    student = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="lesson_feedbacks"
+    )
+    mood = models.CharField(max_length=30)
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class GoogleCalendarToken(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="google_calendar_token"
+    )
+
+    token = models.TextField()
+    refresh_token = models.TextField(blank=True, null=True)
+    token_uri = models.TextField()
+    client_id = models.TextField()
+    client_secret = models.TextField()
+    scopes = models.TextField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def get_credentials_dict(self):
+        return {
+            "token": self.token,
+            "refresh_token": self.refresh_token,
+            "token_uri": self.token_uri,
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "scopes": self.scopes.split(","),
+        }
+
+class LessonMaterial(models.Model):
+    lesson = models.ForeignKey(
+        CalendarEvent,
+        on_delete=models.CASCADE,
+        related_name="materials"
+    )
+    file = models.FileField(upload_to="lesson_materials/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Матеріал до уроку {self.lesson.title}"

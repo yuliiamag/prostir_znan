@@ -1,0 +1,7 @@
+a = 10
+b = 3
+c = a ** 2 + b * 4
+if c >= 100 and a > b:
+    print(c)
+else:
+    print(0)

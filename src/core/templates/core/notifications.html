@@ -2,7 +2,9 @@
 
 {% block content %}
 <div class="notifications-page">
-
+<a href="javascript:history.back()" class="profile-back">
+      ← Назад
+    </a>
   <section class="notif-hero">
     <div>
       <h1>Мої <span>сповіщення</span></h1>
@@ -162,11 +164,7 @@
   font-weight: 800;
 }
 
-.notif-hero h1 span {
-  font-family: serif;
-  font-style: italic;
-  font-weight: 400;
-}
+
 
 .notif-stats {
   display: flex;
@@ -457,14 +455,22 @@
 
 <script>
 const typeGroups = {
-  lesson: ["lesson_created"],
+  lesson: [
+    "lesson",
+    "lesson_created",
+    "lesson_rescheduled",
+    "lesson_cancelled"
+  ],
+
   homework: [
+    "homework",
     "homework_created",
     "homework_submitted",
     "homework_checked"
   ],
-  message: [],
-  important: []
+
+  message: ["message"],
+  important: ["important"]
 };
 
 document.querySelectorAll(".notif-filter").forEach(btn => {

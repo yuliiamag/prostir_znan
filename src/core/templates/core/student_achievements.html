@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Досягнення • MathSpace{% endblock %}
+
+{% block content %}
+
+<style>
+.ach-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 18px 40px;
+  color: #204637;
+}
+
+.ach-hero {
+  background: #0c5f4f;
+  color: white;
+  border-radius: 24px;
+  padding: 28px 32px;
+  margin-bottom: 22px;
+}
+
+.ach-hero h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.ach-hero p {
+  margin: 8px 0 0;
+  color: rgba(255,255,255,.78);
+  font-size: 15px;
+}
+
+.ach-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.ach-stat {
+  background: #f8faf7;
+  border: 1px solid #a8ca88;
+  border-radius: 20px;
+  padding: 18px;
+}
+
+.ach-stat span {
+  display: block;
+  font-size: 12px;
+  color: #5c7560;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.ach-stat strong {
+  font-size: 30px;
+  color: #0c5f4f;
+}
+
+.ach-card {
+  background: white;
+  border: 1px solid #d7e5c6;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 12px 30px rgba(32,70,55,.06);
+}
+
+.ach-card h3 {
+  margin: 0 0 18px;
+  font-size: 18px;
+}
+
+.ach-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.ach-item {
+  background: #f8faf7;
+  border: 1px solid #d7e5c6;
+  border-radius: 18px;
+  padding: 18px;
+  transition: .2s;
+}
+
+.ach-item.done {
+  background: #eef8f0;
+  border-color: #a8ca88;
+}
+
+.ach-item.locked {
+  opacity: .65;
+}
+
+.ach-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background: #e8efe6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.ach-item.done .ach-icon {
+  background: #dff3e5;
+}
+
+.ach-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #204637;
+  margin-bottom: 6px;
+}
+
+.ach-desc {
+  font-size: 13px;
+  color: #6d806d;
+  line-height: 1.45;
+  min-height: 38px;
+}
+
+.ach-progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #5c7560;
+}
+
+.ach-progress {
+  height: 8px;
+  background: #e7efe1;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 7px;
+}
+
+.ach-fill {
+  height: 100%;
+  background: #0c5f4f;
+  border-radius: 999px;
+}
+
+.ach-status {
+  display: inline-flex;
+  margin-top: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ach-status.done {
+  background: #e3f4e7;
+  color: #16804d;
+}
+
+.ach-status.locked {
+  background: #eef2ec;
+  color: #6d806d;
+}
+
+@media (max-width: 900px) {
+  .ach-summary,
+  .ach-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<div class="ach-page">
+    <a href="javascript:history.back()" class="profile-back">
+      ← Назад
+    </a>
+
+  <section class="ach-hero">
+    <h1>Мої досягнення</h1>
+    <p>Тут зібрані твої успіхи за уроками, домашніми завданнями та навчальною активністю.</p>
+  </section>
+
+  <section class="ach-summary">
+    <div class="ach-stat">
+      <span>Отримано</span>
+      <strong>{{ earned_count }}/{{ total_count }}</strong>
+    </div>
+
+    <div class="ach-stat">
+      <span>Уроків</span>
+      <strong>{{ total_lessons }}</strong>
+    </div>
+
+    <div class="ach-stat">
+      <span>Здано ДЗ</span>
+      <strong>{{ submitted_homeworks }}</strong>
+    </div>
+
+    <div class="ach-stat">
+      <span>Прогрес ДЗ</span>
+      <strong>{{ completion_percent }}%</strong>
+    </div>
+  </section>
+
+  <section class="ach-card">
+    <h3>Навчальні досягнення</h3>
+
+    <div class="ach-grid">
+      {% for item in achievements %}
+        <div class="ach-item {% if item.is_done %}done{% else %}locked{% endif %}">
+          <div class="ach-icon">{{ item.icon }}</div>
+
+          <div class="ach-title">{{ item.title }}</div>
+          <div class="ach-desc">{{ item.description }}</div>
+
+          <div class="ach-progress-info">
+            <span>{{ item.current }}/{{ item.target }}</span>
+            <span>{{ item.progress }}%</span>
+          </div>
+
+          <div class="ach-progress">
+            <div class="ach-fill" style="width: {{ item.progress }}%;"></div>
+          </div>
+
+          {% if item.is_done %}
+            <div class="ach-status done">Отримано</div>
+          {% else %}
+            <div class="ach-status locked">В процесі</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+</div>
+
+{% endblock %}

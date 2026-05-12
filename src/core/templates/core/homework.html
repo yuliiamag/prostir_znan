@@ -409,7 +409,9 @@ body{
 
 {% if role == "student" %}
 <div class="page">
-  <a class="back-btn" href="{% url 'dashboard' %}">← Головна</a>
+  <a href="javascript:history.back()" class="profile-back">
+      ← Назад
+    </a>
 
   <div class="page-head">
     <div>
@@ -520,7 +522,9 @@ body{
 
 {% if role == "teacher" %}
 <div class="page">
-  <a class="back-btn" href="{% url 'dashboard' %}">← Головна</a>
+  <a href="javascript:history.back()" class="profile-back">
+      ← Назад
+    </a>
 
   <div class="page-head">
     <div>
