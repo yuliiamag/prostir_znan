@@ -544,7 +544,9 @@ body{
 {% block content %}
 
 <div class="hw-topbar">
-  <a class="hw-back" href="{% url 'homework' %}">← Домашні завдання</a>
+  <a href="javascript:history.back()" class="profile-back">
+      ← Назад
+    </a>
   <div style="width:1px;height:18px;background:rgba(255,255,255,.12);"></div>
   <div class="hw-top-title">
   {% if is_edit %}Редагування завдання{% else %}Нове завдання{% endif %}

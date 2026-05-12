@@ -6,7 +6,9 @@
 
 <div class="homework-detail-page">
 
-  <a href="{% url 'homework' %}" class="back-btn">← Домашні завдання</a>
+  <a href="javascript:history.back()" class="profile-back">
+      ← Назад
+    </a>
 
   <section class="hw-hero
     {% if is_student and homework.status == 'assigned' %}student-todo{% endif %}

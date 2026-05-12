@@ -316,6 +316,95 @@
   border: none;
   cursor: pointer;
 }
+.achievements-card {
+  background: white;
+  border: 1px solid #d7e5c6;
+  border-radius: 22px;
+  padding: 22px;
+  margin-bottom: 22px;
+  box-shadow: 0 12px 30px rgba(32,70,55,.06);
+}
+
+.achievements-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.achievements-head h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #204637;
+}
+
+.achievements-head span {
+  font-size: 13px;
+  color: #6d806d;
+  font-weight: 700;
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.achievement-item {
+  background: #f8faf7;
+  border: 1px solid #d7e5c6;
+  border-radius: 18px;
+  padding: 18px 14px;
+  text-align: center;
+}
+
+.achievement-item.done {
+  background: #eef8f0;
+  border-color: #a8ca88;
+}
+
+.achievement-item.locked {
+  opacity: .55;
+  filter: grayscale(.4);
+}
+
+.achievement-icon {
+  font-size: 30px;
+  margin-bottom: 8px;
+}
+
+.achievement-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #204637;
+  margin-bottom: 5px;
+}
+
+.achievement-text {
+  font-size: 12px;
+  color: #6d806d;
+  line-height: 1.4;
+}
+
+.achievement-progress {
+  margin-top: 10px;
+  height: 6px;
+  background: #e7efe1;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.achievement-fill {
+  height: 100%;
+  background: #0c5f4f;
+  border-radius: 999px;
+}
+
+@media (max-width: 900px) {
+  .achievement-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 @media (max-width: 900px) {
   .stats-grid,
   .analytics-row {
@@ -443,6 +532,54 @@
   {% endfor %}
 </div>
   </section>
+  <section class="achievements-card">
+  <div class="achievements-head">
+   <a href="{% url 'student_achievements' %}" class="hero-btn btn-ghost">
+  Мої досягнення
+</a>
+    <span>Твій навчальний прогрес</span>
+  </div>
+
+  <div class="achievement-grid">
+
+    <div class="achievement-item {% if total_lessons >= 1 %}done{% else %}locked{% endif %}">
+      <div class="achievement-icon">🌱</div>
+      <div class="achievement-title">Перший крок</div>
+      <div class="achievement-text">Проведено перший урок</div>
+      <div class="achievement-progress">
+        <div class="achievement-fill" style="width: {% if total_lessons >= 1 %}100{% else %}0{% endif %}%;"></div>
+      </div>
+    </div>
+
+    <div class="achievement-item {% if total_lessons >= 5 %}done{% else %}locked{% endif %}">
+      <div class="achievement-icon">📚</div>
+      <div class="achievement-title">Активний учень</div>
+      <div class="achievement-text">{{ total_lessons }} з 5 уроків</div>
+      <div class="achievement-progress">
+        <div class="achievement-fill" style="width: {% widthratio total_lessons 5 100 %}%;"></div>
+      </div>
+    </div>
+
+    <div class="achievement-item {% if submitted_homeworks >= 5 %}done{% else %}locked{% endif %}">
+      <div class="achievement-icon">✅</div>
+      <div class="achievement-title">Вчасна здача</div>
+      <div class="achievement-text">{{ submitted_homeworks }} з 5 зданих ДЗ</div>
+      <div class="achievement-progress">
+        <div class="achievement-fill" style="width: {% widthratio submitted_homeworks 5 100 %}%;"></div>
+      </div>
+    </div>
+
+    <div class="achievement-item {% if late_homeworks == 0 and total_homeworks > 0 %}done{% else %}locked{% endif %}">
+      <div class="achievement-icon">🎯</div>
+      <div class="achievement-title">Без прострочень</div>
+      <div class="achievement-text">Немає прострочених завдань</div>
+      <div class="achievement-progress">
+        <div class="achievement-fill" style="width: {% if late_homeworks == 0 and total_homeworks > 0 %}100{% else %}0{% endif %}%;"></div>
+      </div>
+    </div>
+
+  </div>
+</section>
 
   <section class="panel">
     <h3>Останні домашні завдання</h3>

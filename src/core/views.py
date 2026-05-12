@@ -2,7 +2,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import JoinTeacherByCodeForm, TeacherProfileEditForm
-from .models import TeacherProfile, StudentTeacherLink, CalendarEvent, StudentProfile,Homework, HomeworkMaterial,HomeworkSubmission,HomeworkSubmissionFile,Notification,Conversation, ChatMessage,LessonChangeRequest
+from .models import TeacherProfile, StudentTeacherLink, CalendarEvent, StudentProfile,Homework, HomeworkMaterial,HomeworkSubmission,HomeworkSubmissionFile,Notification,Conversation, ChatMessage,LessonChangeRequest,LessonFeedback, GoogleCalendarToken,LessonMaterial
 from django.db.models import Q, Max
 from django.utils import timezone
 import calendar
@@ -15,10 +15,11 @@ from django.http import JsonResponse
 import os
 from django.conf import settings
 from google_auth_oauthlib.flow import Flow
-from .google_calendar import credentials_to_dict, sync_lesson_to_google_calendar
+from .google_calendar import credentials_to_dict, sync_lesson_to_google_calendar,sync_lesson_to_google_calendar_for_participants
 from django.db.models import Count
 from django.db.models.functions import TruncDate, TruncWeek, TruncMonth, TruncYear
 from django.views.decorators.http import require_POST
+
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 def home(request):
@@ -34,9 +35,49 @@ def dashboard(request):
 
 @login_required
 def teachers(request):
-    return render(request, "core/teachers.html")
+    teacher_links = []
 
+    if hasattr(request.user, "student_profile"):
+        teacher_links = StudentTeacherLink.objects.filter(
+            student=request.user.student_profile
+        ).select_related("teacher__user")
 
+    return render(request, "core/teachers.html", {
+        "teacher_links": teacher_links
+    })
+@login_required
+def students(request):
+    student_links = []
+
+    if hasattr(request.user, "teacher_profile"):
+        student_links = StudentTeacherLink.objects.filter(
+            teacher=request.user.teacher_profile
+        ).select_related("student__user")
+
+    return render(request, "core/students.html", {
+        "student_links": student_links
+    })
+@login_required
+def start_chat_with_student(request, student_id):
+    student = get_object_or_404(StudentProfile, id=student_id)
+
+    conversation, created = Conversation.objects.get_or_create(
+        teacher=request.user,
+        student=student.user
+    )
+
+    return redirect("chat_detail", conversation_id=conversation.id)
+
+@login_required
+def start_chat_with_teacher(request, teacher_id):
+    teacher = get_object_or_404(TeacherProfile, id=teacher_id)
+
+    conversation, created = Conversation.objects.get_or_create(
+        teacher=teacher.user,
+        student=request.user
+    )
+
+    return redirect("chat_detail", conversation_id=conversation.id)
 @login_required
 def dashboard_view(request):
     user = request.user
@@ -97,6 +138,15 @@ def teacher_dashboard(request):
     ).order_by("start_time")
     completed_lessons_count = today_lessons.filter(start_time__lt=now).count()
 
+    total_tasks_count = Homework.objects.filter(
+        teacher=user
+    ).count()
+
+    submitted_tasks_count = Homework.objects.filter(
+        teacher=user,
+        status__in=["submitted", "checked"]
+    ).count()
+
     return render(
         request,
         "core/teacher_dashboard.html",
@@ -109,6 +159,8 @@ def teacher_dashboard(request):
             "now": now,
             "completed_lessons_count": completed_lessons_count,
             "unchecked_homeworks": unchecked_homeworks,
+            "total_tasks_count": total_tasks_count,
+            "submitted_tasks_count": submitted_tasks_count,
         },
     )
 
@@ -158,6 +210,15 @@ def student_dashboard_view(request):
         start_time__lt=now
     ).count()
 
+    total_tasks_count = Homework.objects.filter(
+        student=request.user
+    ).count()
+
+    completed_tasks_count = Homework.objects.filter(
+        student=request.user,
+        status="checked"
+    ).count()
+
     context = {
         "student_profile": student_profile,
         "teacher_links": teacher_links,
@@ -168,9 +229,10 @@ def student_dashboard_view(request):
         "completed_lessons_count": completed_lessons_count,
 
         "homework_tasks": [],
-        "completed_tasks_count": 0,
-        "total_tasks_count": 0,
         "homework_tasks": homework_tasks,
+        "today_lessons_count": today_lessons.count(),
+        "completed_tasks_count": completed_tasks_count,
+        "total_tasks_count": total_tasks_count,
     }
 
     return render(request, "core/student_dashboard.html", context)
@@ -214,6 +276,15 @@ def student_profile(request):
         event_type="lesson",
         is_cancelled=False,
     ).count()
+    now = timezone.now()
+
+    completed_lessons_count = CalendarEvent.objects.filter(
+        student=request.user,
+        start_time__date=today,
+        event_type="lesson",
+        is_cancelled=False,
+        start_time__lt=now,
+    ).count()
 
     context = {
         "student_profile": student_profile,
@@ -222,6 +293,7 @@ def student_profile(request):
         "today_lessons_count": today_lessons_count,
         "lessons_count": lessons_count,
         "completed_tasks_count": 0,
+        "completed_lessons_count": completed_lessons_count,
     }
 
     return render(request, "core/student_profile.html", context)
@@ -521,6 +593,22 @@ def create_lesson(request, lesson_id=None):
                     lesson.student = selected_student.user
                     lesson.save()
 
+                    delete_material_ids = request.POST.getlist("delete_material_ids")
+
+                    if delete_material_ids:
+                        LessonMaterial.objects.filter(
+                            id__in=delete_material_ids,
+                            lesson=lesson
+                        ).delete()
+
+                    files = request.FILES.getlist("materials")
+
+                    for file in files:
+                        LessonMaterial.objects.create(
+                            lesson=lesson,
+                            file=file
+                        )
+
                     # messages.success(request, "Урок успішно оновлено.")
                     return redirect("lesson_detail", lesson_id=lesson.id)
 
@@ -535,8 +623,15 @@ def create_lesson(request, lesson_id=None):
                         teacher=request.user,
                         student=selected_student.user,
                     )
+                    files = request.FILES.getlist("materials")
+
+                    for file in files:
+                        LessonMaterial.objects.create(
+                            lesson=lesson,
+                            file=file
+                        )
                     if request.session.get("google_credentials"):
-                        sync_lesson_to_google_calendar(request, lesson)
+                        sync_lesson_to_google_calendar_for_participants(lesson)
 
                    # if form_data["notify_student"] == "on":
                         Notification.objects.create(
@@ -1202,12 +1297,62 @@ def google_calendar_callback(request):
     )
 
     credentials = flow.credentials
-    request.session["google_credentials"] = credentials_to_dict(credentials)
+    creds_dict = credentials_to_dict(credentials)
 
-    sync_user_lessons_after_google_connect(request)
+    GoogleCalendarToken.objects.update_or_create(
+        user=request.user,
+        defaults={
+            "token": creds_dict["token"],
+            "refresh_token": creds_dict.get("refresh_token"),
+            "token_uri": creds_dict["token_uri"],
+            "client_id": creds_dict["client_id"],
+            "client_secret": creds_dict["client_secret"],
+            "scopes": ",".join(creds_dict["scopes"]),
+        }
+    )
+
+    try:
+        sync_user_lessons_after_google_connect(request)
+    except Exception as e:
+        print("GOOGLE CALENDAR FIRST SYNC ERROR:", e)
+        messages.warning(
+            request,
+            "Google Calendar підключено, але старі уроки не всі синхронізувалися."
+        )
 
     return redirect("dashboard")
 
+
+def sync_lesson_to_google_calendar_for_user(user, lesson):
+    google_token = GoogleCalendarToken.objects.filter(user=user).first()
+
+    if not google_token:
+        print(f"Google Calendar не підключено для користувача {user}")
+        return None
+
+    credentials = Credentials(**google_token.get_credentials_dict())
+
+    service = build("calendar", "v3", credentials=credentials)
+
+    event_body = {
+        "summary": lesson.title,
+        "description": lesson.description or "",
+        "start": {
+            "dateTime": lesson.start_time.isoformat(),
+            "timeZone": "Europe/Kyiv",
+        },
+        "end": {
+            "dateTime": lesson.end_time.isoformat(),
+            "timeZone": "Europe/Kyiv",
+        },
+    }
+
+    created_event = service.events().insert(
+        calendarId="primary",
+        body=event_body,
+    ).execute()
+
+    return created_event
 
 def sync_user_lessons_after_google_connect(request):
     if hasattr(request.user, "teacher_profile"):
@@ -1228,7 +1373,10 @@ def sync_user_lessons_after_google_connect(request):
         return
 
     for lesson in lessons:
-        sync_lesson_to_google_calendar(request, lesson)
+        try:
+            sync_lesson_to_google_calendar_for_participants(lesson)
+        except Exception as e:
+            print(f"GOOGLE SYNC ERROR FOR LESSON {lesson.id}:", e)
 
 @login_required
 def teacher_statistics(request):
@@ -1861,7 +2009,7 @@ def request_lesson_reschedule(request, lesson_id):
             user=receiver,
             title="Запит на перенесення уроку",
             message=f"{request.user.first_name} просить перенести урок",
-            notification_type="message",
+            notification_type="lesson_rescheduled",
             link=f"/messages/{conversation.id}/"
         )
 
@@ -1934,7 +2082,7 @@ def cancel_lesson_request(request, lesson_id):
             user=receiver,
             title="Урок скасовано",
             message=f"{request.user.first_name} скасував(ла) урок",
-            notification_type="message",
+            notification_type="lesson_cancelled",
             link=f"/messages/{conversation.id}/"
         )
 
@@ -1994,7 +2142,7 @@ def accept_reschedule_request(request, request_id):
         user=receiver,
         title="Перенесення підтверджено",
         message=f"{request.user.first_name} підтвердив(ла) новий час уроку",
-        notification_type="message",
+        notification_type="lesson_rescheduled",
         link=f"/messages/{conversation.id}/"
     )
 
@@ -2045,7 +2193,7 @@ def decline_reschedule_request(request, request_id):
             user=receiver,
             title="Перенесення відхилено",
             message=f"{request.user.first_name} відхилив(ла) перенесення уроку",
-            notification_type="message",
+            notification_type="lesson_rescheduled",
             link=f"/messages/{conversation.id}/"
         )
 
@@ -2135,7 +2283,7 @@ def counter_reschedule_request(request, request_id):
             user=receiver,
             title="Запропоновано інший час",
             message=f"{request.user.first_name} запропонував(ла) інший час уроку",
-            notification_type="message",
+            notification_type="lesson_rescheduled",
             link=f"/messages/{conversation.id}/"
         )
 
@@ -2231,3 +2379,138 @@ def counter_reschedule_request(request, request_id):
         return redirect("chat_detail", conversation_id=conversation.id)
 
     return redirect("chat_detail", conversation_id=conversation.id)
+
+
+@login_required
+def submit_lesson_feedback(request, lesson_id):
+    lesson = get_object_or_404(CalendarEvent, id=lesson_id)
+
+    if request.user != lesson.student:
+        return redirect("lesson_detail", lesson_id=lesson.id)
+
+    if request.method == "POST":
+        mood = request.POST.get("mood")
+        comment = request.POST.get("comment", "").strip()
+
+        if mood:
+            LessonFeedback.objects.update_or_create(
+                lesson=lesson,
+                student=request.user,
+                defaults={
+                    "mood": mood,
+                    "comment": comment,
+                }
+            )
+
+            Notification.objects.create(
+                user=lesson.teacher,
+                title="Новий відгук після уроку",
+                message=f"{request.user.first_name} залишив(ла) відгук про урок",
+                notification_type="lesson_feedback",
+                link=f"/lesson/{lesson.id}/"
+            )
+
+    return redirect("lesson_detail", lesson_id=lesson.id)
+
+@login_required
+def student_achievements(request):
+    student = request.user
+    now = timezone.now()
+
+    total_lessons = CalendarEvent.objects.filter(
+        student=student,
+        event_type="lesson",
+        start_time__lt=now,
+        is_cancelled=False
+    ).count()
+
+    total_homeworks = Homework.objects.filter(student=student).count()
+
+    submitted_homeworks = Homework.objects.filter(
+        student=student,
+        status__in=["submitted", "checked"]
+    ).count()
+
+    checked_homeworks = Homework.objects.filter(
+        student=student,
+        status="checked"
+    ).count()
+
+    late_homeworks = Homework.objects.filter(
+        student=student,
+        status="late"
+    ).count()
+
+    completion_percent = 0
+    if total_homeworks > 0:
+        completion_percent = round((submitted_homeworks / total_homeworks) * 100)
+
+    achievements = [
+        {
+            "icon": "🌱",
+            "title": "Перший крок",
+            "description": "Проведи свій перший урок на платформі.",
+            "current": total_lessons,
+            "target": 1,
+        },
+        {
+            "icon": "📚",
+            "title": "Активний учень",
+            "description": "Відвідай 5 уроків.",
+            "current": total_lessons,
+            "target": 5,
+        },
+        {
+            "icon": "🔥",
+            "title": "Стабільний темп",
+            "description": "Відвідай 10 уроків.",
+            "current": total_lessons,
+            "target": 10,
+        },
+        {
+            "icon": "✅",
+            "title": "Відповідальний",
+            "description": "Здай 5 домашніх завдань.",
+            "current": submitted_homeworks,
+            "target": 5,
+        },
+        {
+            "icon": "🎯",
+            "title": "Без прострочень",
+            "description": "Не мати прострочених завдань.",
+            "current": 1 if late_homeworks == 0 and total_homeworks > 0 else 0,
+            "target": 1,
+        },
+        {
+            "icon": "⭐",
+            "title": "Перевірений результат",
+            "description": "Отримай 5 перевірених робіт.",
+            "current": checked_homeworks,
+            "target": 5,
+        },
+    ]
+
+    for achievement in achievements:
+        progress = 0
+
+        if achievement["target"] > 0:
+            progress = round((achievement["current"] / achievement["target"]) * 100)
+
+        achievement["progress"] = min(progress, 100)
+        achievement["is_done"] = achievement["current"] >= achievement["target"]
+
+    earned_count = sum(1 for item in achievements if item["is_done"])
+
+    context = {
+        "achievements": achievements,
+        "earned_count": earned_count,
+        "total_count": len(achievements),
+        "total_lessons": total_lessons,
+        "total_homeworks": total_homeworks,
+        "submitted_homeworks": submitted_homeworks,
+        "checked_homeworks": checked_homeworks,
+        "late_homeworks": late_homeworks,
+        "completion_percent": completion_percent,
+    }
+
+    return render(request, "core/student_achievements.html", context)

@@ -2,13 +2,34 @@
 
 {% block content %}
 <style>
-.teachers-page {
+.students-page {
   max-width: 1180px;
   margin: 0 auto;
   padding: 28px 20px 44px;
 }
 
-.teachers-hero {
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: white;
+  border: 1px solid #d7e5c6;
+  color: #204637;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 800;
+  transition: .2s ease;
+}
+
+.back-btn:hover {
+  transform: translateY(-2px);
+  background: #f3f8f4;
+}
+
+.students-hero {
   background: #0c5f4f;
   border-radius: 30px;
   padding: 34px;
@@ -17,25 +38,25 @@
   box-shadow: 0 18px 40px rgba(12,95,79,.15);
 }
 
-.teachers-hero h1 {
+.students-hero h1 {
   margin: 0;
   font-size: 38px;
   font-weight: 800;
 }
 
-.teachers-hero p {
+.students-hero p {
   margin: 10px 0 0;
   font-size: 15px;
   color: rgba(255,255,255,.82);
 }
 
-.teacher-grid {
+.student-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 18px;
 }
 
-.teacher-card {
+.student-card {
   background: white;
   border: 1px solid #d7e5c6;
   border-radius: 26px;
@@ -46,19 +67,19 @@
   box-shadow: 0 10px 24px rgba(32,70,55,.05);
 }
 
-.teacher-card:hover {
+.student-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 18px 35px rgba(32,70,55,.09);
 }
 
-.teacher-top {
+.student-top {
   display: flex;
   align-items: center;
   gap: 14px;
   margin-bottom: 18px;
 }
 
-.teacher-avatar {
+.student-avatar {
   width: 62px;
   height: 62px;
   border-radius: 50%;
@@ -71,19 +92,19 @@
   font-weight: 800;
 }
 
-.teacher-name {
+.student-name {
   font-size: 20px;
   font-weight: 800;
   color: #204637;
 }
 
-.teacher-email {
+.student-email {
   margin-top: 3px;
   font-size: 13px;
   color: #6f8578;
 }
 
-.teacher-info {
+.student-info {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -108,7 +129,7 @@
   text-align: right;
 }
 
-.teacher-footer {
+.student-footer {
   display: flex;
   justify-content: flex-end;
 }
@@ -126,7 +147,7 @@
   transition: .2s ease;
 }
 
-.teacher-card:hover .open-profile-btn {
+.student-card:hover .open-profile-btn {
   background: #0c5f4f;
   color: white;
 }
@@ -155,64 +176,70 @@
   font-size: 14px;
 }
 
+@media (max-width: 1000px) {
+  .student-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 700px) {
-  .teachers-hero {
+  .student-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .students-hero {
     padding: 26px;
   }
 
-  .teachers-hero h1 {
+  .students-hero h1 {
     font-size: 30px;
   }
 }
 </style>
 
-<div class="teachers-page">
-  <a href="javascript:history.back()" class="profile-back">
-      ← Назад
-    </a>
+<div class="students-page">
 
-  <section class="teachers-hero">
+  <a href="javascript:history.back()" class="back-btn">
+    ← Назад
+  </a>
 
-    <h1>Мої викладачі</h1>
+  <section class="students-hero">
+    <h1>Мої учні</h1>
+
     <p>
-      Тут відображаються всі викладачі, які підключені до твого профілю.
+      Тут відображаються всі учні, які підключені до твого профілю.
     </p>
   </section>
 
-  {% if teacher_links %}
-    <div class="teacher-grid">
+  {% if student_links %}
+    <div class="student-grid">
 
-      {% for link in teacher_links %}
-        <a href="{% url 'teacher_public_profile' link.teacher.id %}" class="teacher-card">
+      {% for link in student_links %}
+        <a href="{% url 'student_public_profile' link.student.id %}" class="student-card">
 
-          <div class="teacher-top">
-            <div class="teacher-avatar">
-              {{ link.teacher.user.first_name|slice:":1" }}{{ link.teacher.user.last_name|slice:":1" }}
+          <div class="student-top">
+            <div class="student-avatar">
+              {{ link.student.user.first_name|slice:":1" }}
+              {{ link.student.user.last_name|slice:":1" }}
             </div>
 
             <div>
-              <div class="teacher-name">
-                {{ link.teacher.user.first_name }}
-                {{ link.teacher.user.last_name }}
+              <div class="student-name">
+                {{ link.student.user.first_name }}
+                {{ link.student.user.last_name }}
               </div>
 
-              <div class="teacher-email">
-                {{ link.teacher.user.email }}
+              <div class="student-email">
+                {{ link.student.user.email }}
               </div>
             </div>
           </div>
 
-          <div class="teacher-info">
-
-           <div class="info-row">
-            <span class="info-label">Предмет</span>
-            <span class="info-value">
-              {{ link.teacher.subject|default:"Не вказано" }}
-            </span>
-          </div>
+          <div class="student-info">
 
             <div class="info-row">
               <span class="info-label">Статус</span>
+
               <span class="info-value">
                 Підключено
               </span>
@@ -220,7 +247,7 @@
 
           </div>
 
-          <div class="teacher-footer">
+          <div class="student-footer">
             <div class="open-profile-btn">
               Відкрити профіль →
             </div>
@@ -233,10 +260,12 @@
 
   {% else %}
     <div class="empty-state">
-      <div class="empty-icon">📚</div>
-      <h3>Ще немає викладачів</h3>
+      <div class="empty-icon">👩‍🎓</div>
+
+      <h3>Ще немає учнів</h3>
+
       <p>
-        Підключи викладача за кодом доступу, щоб він з’явився тут.
+        Підключи учнів через код доступу, щоб вони з’явилися тут.
       </p>
     </div>
   {% endif %}

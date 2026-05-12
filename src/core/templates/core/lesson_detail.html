@@ -447,12 +447,54 @@
   background: #f2faf6;
   color: #4a7a63;
 }
+.materials-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
+.material-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border: 1px solid #d6ede3;
+  border-radius: 12px;
+  background: #f2faf6;
+
+  color: #0d2b1f;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.material-item:hover {
+  background: #e8f5ef;
+}
+
+.material-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #e8f5ef;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.material-name {
+  word-break: break-word;
+}
 .btn-main {
   background: #0c5f4f;
   color: white;
 }
-
+.feedback-card {
+  max-width: 610px;
+}
 .btn-danger {
   background: #ef4444;
   color: white;
@@ -472,7 +514,9 @@
 {% block content %}
 <div class="lesson-page">
 
-  <a href="{% url 'calendar' %}" class="back-btn">← Мої заняття</a>
+  <a href="javascript:history.back()" class="profile-back">
+      ← Назад
+    </a>
 
   {% if is_teacher %}
 
@@ -549,19 +593,6 @@
             </div>
           </div>
 
-          <div class="info-row">
-            <div class="info-ico">📍</div>
-            <div>
-              <div class="info-label">Формат</div>
-              <div class="info-value">
-                {% if lesson.meeting_link %}
-                  Онлайн
-                {% else %}
-                  Не вказано
-                {% endif %}
-              </div>
-            </div>
-          </div>
         </section>
 
         <section class="lesson-card">
@@ -574,6 +605,23 @@
             {% endif %}
           </p>
         </section>
+         {% if lesson.materials.all %}
+          <section class="lesson-card">
+            <div class="card-title">Матеріали до уроку</div>
+
+            <div class="materials-list">
+              {% for material in lesson.materials.all %}
+                <a href="{{ material.file.url }}" target="_blank" class="material-item">
+                  <span class="material-icon">📎</span>
+                  <span class="material-name">
+                    {{ material.file.name|cut:"lesson_materials/" }}
+                  </span>
+                </a>
+              {% endfor %}
+            </div>
+          </section>
+        {% endif %}
+
 
       </div>
 
@@ -628,7 +676,6 @@
             <a href="{% url 'create_homework' %}?lesson_id={{ lesson.id }}" class="action-btn">
               Додати домашнє завдання
             </a>
-            <button class="action-btn"> Надіслати нагадування</button>
             {% if not lesson.is_cancelled %}
               <button type="button" class="action-btn" onclick="openRescheduleModal()">
                  Перенести урок
@@ -646,7 +693,27 @@
         </section>
       </aside>
     </div>
+{% if request.user == lesson.teacher and lesson.feedback %}
+  <section class="lesson-card feedback-card">
+    <div class="card-title">Відгук учня</div>
 
+    <div class="feedback-result">
+      {% if lesson.feedback.mood == "clear" %}
+        😊 Зрозуміло
+      {% elif lesson.feedback.mood == "hard" %}
+        🤔 Складнувато
+      {% elif lesson.feedback.mood == "not_clear" %}
+        😵 Не зрозуміло
+      {% endif %}
+    </div>
+
+    {% if lesson.feedback.comment %}
+      <p class="feedback-comment">
+        {{ lesson.feedback.comment }}
+      </p>
+    {% endif %}
+  </section>
+{% endif %}
   {% elif is_student %}
 
     <!-- ================= ВИГЛЯД ДЛЯ УЧНЯ ================= -->
@@ -685,7 +752,7 @@
           <div class="card-title">Інформація</div>
 
           <div class="info-row">
-            <div class="info-ico"></div>
+            <div class="info-ico">📅</div>
             <div>
               <div class="info-label">Дата та час</div>
               <div class="info-value">
@@ -716,20 +783,6 @@
               <div class="info-value">{{ lesson.title }}</div>
             </div>
           </div>
-
-          <div class="info-row">
-            <div class="info-ico">📍</div>
-            <div>
-              <div class="info-label">Формат</div>
-              <div class="info-value">
-                {% if lesson.meeting_link %}
-                  Онлайн
-                {% else %}
-                  Не вказано
-                {% endif %}
-              </div>
-            </div>
-          </div>
         </section>
 
         <section class="lesson-card">
@@ -751,39 +804,71 @@
           </a>
         </section>
         {% endif %}
+        {% if lesson.materials.all %}
+          <section class="lesson-card">
+            <div class="card-title">Матеріали до уроку</div>
 
-
-        <section class="lesson-card">
-          <div class="card-title">Зворотний зв’язок після уроку</div>
-
-          <div style="font-size: 13px; color: #4a7a63;">
-            Як пройшов урок?
-          </div>
-
-          <div class="feedback-options">
-            <div class="fb-opt">
-              <span class="fb-emoji">😊</span>
-              Зрозуміло
+            <div class="materials-list">
+              {% for material in lesson.materials.all %}
+                <a href="{{ material.file.url }}" target="_blank" class="material-item">
+                  <span class="material-icon">📎</span>
+                  <span class="material-name">
+                    {{ material.file.name|cut:"lesson_materials/" }}
+                  </span>
+                </a>
+              {% endfor %}
             </div>
-            <div class="fb-opt">
-              <span class="fb-emoji">🤔</span>
-              Складнувато
-            </div>
-            <div class="fb-opt">
-              <span class="fb-emoji">😵</span>
-              Не зрозумів
-            </div>
-          </div>
+          </section>
+        {% endif %}
 
-          <textarea class="note-area" style="margin-top: 12px;" placeholder="Що було складно або що сподобалось?"></textarea>
-          <button class="small-btn">Надіслати відгук</button>
-        </section>
 
+        {% if request.user == lesson.student %}
+  <section class="lesson-card">
+    <div class="card-title">Зворотний зв’язок після уроку</div>
+
+    <form method="post" action="{% url 'submit_lesson_feedback' lesson.id %}">
+      {% csrf_token %}
+
+      <div style="font-size: 13px; color: #4a7a63;">
+        Як пройшов урок?
+      </div>
+
+      <div class="feedback-options">
+        <label class="fb-opt">
+          <input type="radio" name="mood" value="clear" required>
+          <span class="fb-emoji">😊</span>
+          Зрозуміло
+        </label>
+
+        <label class="fb-opt">
+          <input type="radio" name="mood" value="hard">
+          <span class="fb-emoji">🤔</span>
+          Складнувато
+        </label>
+
+        <label class="fb-opt">
+          <input type="radio" name="mood" value="not_clear">
+          <span class="fb-emoji">😵</span>
+          Не зрозуміло
+        </label>
+      </div>
+
+      <textarea
+        name="comment"
+        class="note-area"
+        style="margin-top: 12px;"
+        placeholder="Що було складно або що сподобалось?"></textarea>
+
+      <button type="submit" class="small-btn">
+        Надіслати відгук
+      </button>
+    </form>
+  </section>
+{% endif %}
       </div>
 
       <aside class="right-col">
         <section class="person-card">
-
   {% if teacher_profile %}
     <a href="{% url 'teacher_public_profile' teacher_profile.id %}" class="person-link">
   {% else %}
@@ -823,8 +908,10 @@
             {% if lesson.meeting_link %}
               <a href="{{ lesson.meeting_link }}" target="_blank" class="action-btn primary">▶ Перейти на урок</a>
             {% endif %}
-            <button class="action-btn"> Написати вчителю</button>
-            <button class="action-btn"> Запросити новий урок</button>
+            <a href="{% url 'start_chat_with_teacher' lesson.teacher.teacher_profile.id %}"
+               class="action-btn">
+              Написати вчителю
+            </a>
             {% if not lesson.is_cancelled %}
             <div class="lesson-actions">
               <button type="button" class="action-btn" onclick="openRescheduleModal()">

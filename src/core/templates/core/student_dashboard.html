@@ -271,7 +271,21 @@
     color: #638174;
     margin: 0;
   }
+.stat-link-card {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
 
+.stat-link-card .stat-card {
+  transition: .2s ease;
+  cursor: pointer;
+}
+
+.stat-link-card .stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(32,70,55,.08);
+}
   .errorlist {
     margin: 10px 0 0;
     padding: 10px 14px;
@@ -360,22 +374,21 @@
   </section>
 
   <section class="stats-grid">
-    <div class="card stat-card">
-      <h3>Кількість вчителів</h3>
-      <div class="stat-value">{{ teacher_links.count }}</div>
-      <div class="stat-note">Підключені до твого профілю</div>
-    </div>
+    <a href="{% url 'teachers' %}" class="stat-link-card">
+      <div class="card stat-card">
+        <h3>Кількість вчителів</h3>
+        <div class="stat-value">{{ teacher_links.count }}</div>
+      </div>
+    </a>
 
     <div class="card stat-card">
       <h3>Уроків сьогодні</h3>
-      <div class="stat-value">{{ today_lessons.count }}</div>
-      <div class="stat-note">{{ completed_lessons_count }} вже завершено</div>
+        <div class="stat-value">{{ today_lessons_count }}</div>
     </div>
 
     <div class="card stat-card">
       <h3>Завдань виконано</h3>
-      <div class="stat-value">{{ completed_tasks_count|default:"0" }}/{{ total_tasks_count|default:"0" }}</div>
-      <div class="stat-note">Твій прогрес за завданнями</div>
+       <div class="stat-value">{{ completed_tasks_count }}/{{ total_tasks_count }}</div>
     </div>
   </section>
 
