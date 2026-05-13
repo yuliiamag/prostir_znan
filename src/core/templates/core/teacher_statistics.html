@@ -498,8 +498,8 @@
         <div>{{ item.lessons_count }}</div>
 
         <div>
-          <span class="badge {% if item.homework_percent >= 85 %}green{% elif item.homework_percent >= 60 %}amber{% else %}red{% endif %}">
-            {{ item.homework_percent }}%
+          <span class="badge green">
+            {{ item.submitted_homeworks }} / {{ item.total_homeworks }}
           </span>
         </div>
 

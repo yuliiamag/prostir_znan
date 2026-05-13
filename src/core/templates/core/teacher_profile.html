@@ -146,20 +146,29 @@
     color: #4a7a2d;
   }
 
-  .field-value {
+  .field-value,
+.field-input {
   width: 100%;
-  min-height: 16px;
+  min-height: 34px;
   background: #ffffff;
   color: #204637;
   border: 1px solid #cbd5c0;
   border-radius: 10px;
-  padding: 6px 10px;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
+  padding: 8px 10px;
+  font-size: 14px;
   box-sizing: border-box;
 }
-  }
+
+.field-value {
+  display: flex;
+  align-items: center;
+}
+  .form-actions {
+  margin-top: 18px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
   .field-value.textarea-like {
     min-height: 60px;

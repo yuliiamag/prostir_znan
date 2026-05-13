@@ -159,14 +159,18 @@ def update_lesson_in_google_calendar(request, lesson):
     if lesson.meeting_link:
         event_body["location"] = lesson.meeting_link
 
-    updated_event = service.events().update(
-        calendarId="primary",
-        eventId=lesson.google_event_id,
-        body=event_body,
-    ).execute()
+    try:
+        updated_event = service.events().update(
+            calendarId="primary",
+            eventId=lesson.google_event_id,
+            body=event_body,
+        ).execute()
 
-    return updated_event
+        return updated_event
 
+    except Exception as e:
+        print("Google Calendar update error:", e)
+        return None
 
 def delete_lesson_from_google_calendar(request, lesson):
     service = get_google_calendar_service(request)
