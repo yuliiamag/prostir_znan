@@ -6,7 +6,6 @@ from .views import (
 
 )
 urlpatterns = [
-    #path("", views.home, name="home"),
     path("dashboard/", dashboard_view, name="dashboard"),
     path("teachers/", views.teachers, name="teachers"),
     path("dashboard/student/", student_dashboard_view, name="student_dashboard"),
@@ -29,7 +28,6 @@ urlpatterns = [
     path("homework/<int:pk>/edit/", views.create_homework, name="edit_homework"),
     path("teacher/<int:teacher_id>/profile/", views.teacher_public_profile, name="teacher_public_profile"),
     path("student/<int:student_id>/profile/", views.student_public_profile, name="student_public_profile"),
-   # path("", views.landing, name="landing"),
     path("", views.home, name="home"),
     path("landing/", views.landing, name="landing"),
     path("google/connect/", views.google_calendar_auth, name="google_calendar_auth"),

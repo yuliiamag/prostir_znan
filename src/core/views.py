@@ -27,9 +27,16 @@ from core.achievements import build_achievements
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 def home(request):
     if not request.user.is_authenticated:
-        return redirect("landing")
-    return render(request, "core/home.html")
+        return render(request, "landing.html")
 
+    return redirect("dashboard")
+
+
+def landing(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    return render(request, "landing.html")
 
 @login_required
 def dashboard(request):
@@ -596,8 +603,13 @@ def create_lesson(request, lesson_id=None):
                     lesson.student = selected_student.user
                     lesson.save()
 
-                    if lesson.google_event_id:
-                        update_lesson_in_google_calendar(request, lesson)
+                    try:
+                        if lesson.google_event_id:
+                            update_lesson_in_google_calendar(request, lesson)
+                        else:
+                            sync_lesson_to_google_calendar(request, lesson)
+                    except Exception as e:
+                        print("Google Calendar sync error:", e)
 
                     delete_material_ids = request.POST.getlist("delete_material_ids")
 
@@ -1272,11 +1284,8 @@ def student_public_profile(request, student_id):
 
     return render(request, "core/profile_detail.html", context)
 
-def landing(request):
-    if request.user.is_authenticated:
-        return redirect("dashboard")
 
-    return render(request, "landing.html")
+
 
 
 @login_required
@@ -1499,17 +1508,20 @@ def teacher_statistics(request):
             student_homeworks = homeworks.filter(student=student_user)
 
         student_hw_total = student_homeworks.count()
-        student_hw_done = student_homeworks.filter(status__in=["submitted", "checked"]).count()
-        student_hw_late = student_homeworks.filter(status="late").count()
 
-        homework_percent = round((student_hw_done / student_hw_total) * 100) if student_hw_total else 0
+        student_hw_done = student_homeworks.filter(
+            status__in=["submitted", "checked"]
+        ).count()
 
+        student_hw_late = student_homeworks.filter(
+            status="late"
+        ).count()
         last_lesson = student_lessons.filter(start_time__lt=now).order_by("-start_time").first()
 
-        if homework_percent >= 85:
+        if student_hw_done >= student_hw_total and student_hw_total > 0:
             status = "Відмінно"
             status_class = "green"
-        elif homework_percent >= 60:
+        elif student_hw_done >= max(1, student_hw_total // 2):
             status = "Добре"
             status_class = "amber"
         else:
@@ -1519,7 +1531,8 @@ def teacher_statistics(request):
         students_stats.append({
             "student": student_user,
             "lessons_count": student_completed_lessons.count(),
-            "homework_percent": homework_percent,
+            "submitted_homeworks": student_hw_done,
+            "total_homeworks": student_hw_total,
             "homework_late": student_hw_late,
             "last_lesson": last_lesson,
             "status": status,
