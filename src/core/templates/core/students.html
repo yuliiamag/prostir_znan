@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% block title %}Мої учні• Куточок знань{% endblock %}
 {% block content %}
 <style>
 .students-page {
@@ -12,21 +12,26 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 18px;
-  padding: 10px 16px;
-  border-radius: 999px;
-  background: white;
-  border: 1px solid #d7e5c6;
+
+  margin-bottom: 8px;
+  margin-top: -8px;
+
   color: #204637;
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 800;
+
+  font-size: 15px;
+  font-weight: 700;
+
+  background: transparent;
+  border: none;
+  padding: 0;
+
   transition: .2s ease;
 }
 
 .back-btn:hover {
-  transform: translateY(-2px);
-  background: #f3f8f4;
+  color: #0c5f4f;
+  transform: translateX(-2px);
 }
 
 .students-hero {

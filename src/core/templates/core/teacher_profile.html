@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Мій профіль • MathSpace{% endblock %}
+{% block title %}Мій профіль • Куточок знань{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -373,15 +373,17 @@
           <strong>{{ students_count }}</strong>
         </div>
 
-        <div class="stat-row">
-          <span>На платформі</span>
-          <strong>Вересень 2025</strong>
-        </div>
 
         <div class="stat-row">
 
           <span>Предмет</span>
-          <strong>{{ teacher_profile.get_subject_display|default:"Математика" }}</strong>
+          <strong>
+  {% if teacher_profile.subject %}
+    {{ teacher_profile.subject }}
+  {% else %}
+    Не вказано
+  {% endif %}
+</strong>
         </div>
         <div class="stat-row">
           <span>Проведено уроків</span>
