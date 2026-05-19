@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Домашні завдання • MathSpace{% endblock %}
+{% block title %}Домашні завдання • Простір знань{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -434,7 +434,7 @@ body{
     </div>
 
     <div class="stat-card">
-      <div class="stat-label">Здано</div>
+      <div class="stat-label">Виконано</div>
       <div class="stat-value">{{ submitted_count }}</div>
       <div class="stat-note">очікує перевірки</div>
     </div>
@@ -450,7 +450,7 @@ body{
     <span class="filter-label">Статус:</span>
     <button class="filter-pill active" onclick="filterHomeworks('all', this)">Всі</button>
     <button class="filter-pill" onclick="filterHomeworks('assigned', this)">Задано</button>
-    <button class="filter-pill" onclick="filterHomeworks('submitted', this)">Здано</button>
+    <button class="filter-pill" onclick="filterHomeworks('submitted', this)">Виконано</button>
     <button class="filter-pill" onclick="filterHomeworks('checked', this)">Перевірено</button>
     <button class="filter-pill" onclick="filterHomeworks('late', this)">Прострочено</button>
   </div>
@@ -547,11 +547,11 @@ body{
     <div class="stat-card">
       <div class="stat-label">Призначено</div>
       <div class="stat-value">{{ assigned_count }}</div>
-      <div class="stat-note">ще не здано</div>
+      <div class="stat-note">ще не виконано</div>
     </div>
 
     <div class="stat-card">
-      <div class="stat-label">Здано</div>
+      <div class="stat-label">Виконано</div>
       <div class="stat-value">{{ submitted_count }}</div>
       <div class="stat-note">на перевірку</div>
     </div>
@@ -567,7 +567,7 @@ body{
     <span class="filter-label">Статус:</span>
     <button class="filter-pill active" onclick="filterHomeworks('all', this)">Всі</button>
     <button class="filter-pill" onclick="filterHomeworks('assigned', this)">Задано</button>
-    <button class="filter-pill" onclick="filterHomeworks('submitted', this)">Здано</button>
+    <button class="filter-pill" onclick="filterHomeworks('submitted', this)">Виконано</button>
     <button class="filter-pill" onclick="filterHomeworks('checked', this)">Перевірено</button>
     <button class="filter-pill" onclick="filterHomeworks('late', this)">Прострочено</button>
   </div>

@@ -854,7 +854,7 @@ def add_student_manual(request):
                 student=student_profile
             )
 
-            messages.success(request, "Учня додано.")
+            #messages.success(request, "Учня додано.")
         except User.DoesNotExist:
             messages.error(request, "Учня з такою поштою не знайдено.")
         except StudentProfile.DoesNotExist:
@@ -1132,7 +1132,7 @@ def homework_detail(request, pk):
                 link=f"/homework/{homework.id}/"
             )
 
-            messages.success(request, "Домашнє завдання надіслано.")
+            #messages.success(request, "Домашнє завдання надіслано.")
             return redirect("homework_detail", pk=homework.pk)
 
         # учень видаляє свій файл
@@ -2057,7 +2057,7 @@ def request_lesson_reschedule(request, lesson_id):
             link=f"/messages/{conversation.id}/"
         )
 
-        messages.success(request, "Запит на перенесення надіслано у чат.")
+        #messages.success(request, "Запит на перенесення надіслано у чат.")
         return redirect("chat_detail", conversation_id=conversation.id)
 
     return redirect("lesson_detail", lesson_id=lesson.id)
@@ -2132,7 +2132,7 @@ def cancel_lesson_request(request, lesson_id):
             link=f"/messages/{conversation.id}/"
         )
 
-        messages.success(request, "Урок скасовано, повідомлення надіслано у чат.")
+        #messages.success(request, "Урок скасовано, повідомлення надіслано у чат.")
         return redirect("chat_detail", conversation_id=conversation.id)
 
     return redirect("lesson_detail", lesson_id=lesson.id)
@@ -2243,7 +2243,7 @@ def decline_reschedule_request(request, request_id):
             link=f"/messages/{conversation.id}/"
         )
 
-        messages.success(request, "Запит відхилено.")
+        #messages.success(request, "Запит відхилено.")
         return redirect("chat_detail", conversation_id=conversation.id)
 
     return redirect("chat_detail", conversation_id=conversation.id)
@@ -2333,7 +2333,7 @@ def counter_reschedule_request(request, request_id):
             link=f"/messages/{conversation.id}/"
         )
 
-        messages.success(request, "Новий час надіслано у чат.")
+        #messages.success(request, "Новий час надіслано у чат.")
         return redirect("chat_detail", conversation_id=conversation.id)
 
     return redirect("chat_detail", conversation_id=conversation.id)@login_required
@@ -2421,7 +2421,7 @@ def counter_reschedule_request(request, request_id):
             link=f"/messages/{conversation.id}/"
         )
 
-        messages.success(request, "Новий час надіслано у чат.")
+        #messages.success(request, "Новий час надіслано у чат.")
         return redirect("chat_detail", conversation_id=conversation.id)
 
     return redirect("chat_detail", conversation_id=conversation.id)

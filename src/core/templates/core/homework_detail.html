@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Деталі завдання • MathSpace{% endblock %}
+{% block title %}Деталі завдання • Простір знань{% endblock %}
 
 {% block content %}
 
@@ -80,7 +80,7 @@
         <div class="deadline-box">
           <div class="deadline-icon">⏰</div>
           <div>
-            <div class="deadline-label">Дедлайн</div>
+            <div class="deadline-label">Термін закінчення</div>
             <div class="deadline-value">{{ homework.deadline|date:"d.m.Y H:i" }}</div>
           </div>
         </div>
@@ -322,7 +322,7 @@
         <div class="info-row">
           <span>⏰</span>
           <div>
-            <small>Дедлайн</small>
+            <small>Термін закінчення</small>
             <strong>{{ homework.deadline|date:"d.m.Y H:i" }}</strong>
           </div>
         </div>
