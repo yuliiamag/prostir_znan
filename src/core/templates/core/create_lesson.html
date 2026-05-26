@@ -586,15 +586,7 @@
   <h1 class="page-title">Новий урок</h1>
   <p class="page-subtitle">Учень отримає сповіщення автоматично про новий урок</p>
 
-  {% if messages %}
-    <div class="messages-wrap">
-      {% for message in messages %}
-        <div class="msg {% if message.tags == 'success' %}msg-success{% else %}msg-error{% endif %}">
-          {{ message }}
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
+
 
   <form method="post" class="lesson-form" enctype="multipart/form-data">
     {% csrf_token %}

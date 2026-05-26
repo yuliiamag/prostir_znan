@@ -471,10 +471,8 @@
               <div>
                 <div class="item-title">{{ task.title }}</div>
                 <div class="item-subtitle">
-                  {% if task.due_date %}
-                    До {{ task.due_date|date:"d.m.Y" }}
-                  {% else %}
-                    Без дедлайну
+                  {% if task.deadline %}
+                      До {{ task.deadline|date:"d.m.Y H:i" }}
                   {% endif %}
                 </div>
               </div>

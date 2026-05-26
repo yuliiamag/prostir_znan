@@ -22,14 +22,28 @@ from django.views.decorators.http import require_POST
 from django.core.mail import send_mail
 from .google_calendar import update_lesson_in_google_calendar, delete_lesson_from_google_calendar
 from core.achievements import build_achievements
-
+from django.contrib.auth import logout
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-def home(request):
-    if not request.user.is_authenticated:
-        return render(request, "landing.html")
 
-    return redirect("dashboard")
+def home(request):
+    user = request.user
+
+    if user.is_authenticated:
+        if hasattr(user, "teacher_profile"):
+            return redirect("teacher_dashboard")
+
+        if hasattr(user, "student_profile"):
+            return redirect("student_dashboard")
+
+        logout(request)
+        return redirect("landing")
+
+    return render(request, "landing.html")
+
+
+def landing(request):
+    return render(request, "landing.html")
 
 
 def landing(request):
@@ -40,6 +54,14 @@ def landing(request):
 
 @login_required
 def dashboard(request):
+    user = request.user
+
+    if hasattr(user, "teacher_profile"):
+        return redirect("teacher_dashboard")
+
+    if hasattr(user, "student_profile"):
+        return redirect("student_dashboard")
+
     return render(request, "core/dashboard.html")
 
 
@@ -88,18 +110,18 @@ def start_chat_with_teacher(request, teacher_id):
     )
 
     return redirect("chat_detail", conversation_id=conversation.id)
-@login_required
-def dashboard_view(request):
-    user = request.user
-
-    if hasattr(user, "teacher_profile"):
-        return redirect("teacher_dashboard")
-
-    if hasattr(user, "student_profile"):
-        return redirect("student_dashboard")
-
-    messages.error(request, "Профіль користувача не знайдено.")
-    return redirect("home")
+# @login_required
+# def dashboard_view(request):
+#     user = request.user
+#
+#     if hasattr(user, "teacher_profile"):
+#         return redirect("teacher_dashboard")
+#
+#     if hasattr(user, "student_profile"):
+#         return redirect("student_dashboard")
+#
+#     messages.error(request, "Профіль користувача не знайдено.")
+#     return redirect("landing")
 
 
 @login_required
@@ -1886,7 +1908,7 @@ def chat_view(request, conversation_id=None):
     context = {
         "conversations": conversations,
         "active_conversation": active_conversation,
-        "messages": messages,
+        "chat_messages": messages,
     }
 
     return render(request, "core/chat.html", context)
