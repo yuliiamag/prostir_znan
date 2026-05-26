@@ -313,7 +313,9 @@
   <div class="chat-sb">
 
     <div class="sb-top">
-      <a class="sb-back" href="{% url 'dashboard' %}">← Назад</a>
+      <a href="javascript:history.back()" class="profile-back">
+      ← Назад
+    </a>
     </div>
 
     <div class="sb-title-row">
@@ -435,7 +437,7 @@
       <!-- MESSAGES -->
       <div class="messages-wrap" id="messages">
 
-        {% for msg in messages %}
+        {% for msg in chat_messages %}
   <div class="msg-row {% if msg.sender == request.user %}sent{% endif %}">
     <div>
       <div class="msg-bubble">
