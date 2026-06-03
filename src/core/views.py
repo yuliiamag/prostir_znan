@@ -2,8 +2,8 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import JoinTeacherByCodeForm, TeacherProfileEditForm
-from .models import TeacherProfile, StudentTeacherLink, CalendarEvent, StudentProfile,Homework, HomeworkMaterial,HomeworkSubmission,HomeworkSubmissionFile,Notification,Conversation, ChatMessage,LessonChangeRequest,LessonFeedback, GoogleCalendarToken,LessonMaterial
-from django.db.models import Q, Max
+from .models import TeacherProfile, StudentTeacherLink, CalendarEvent, StudentProfile,Homework, HomeworkMaterial,HomeworkSubmission,HomeworkSubmissionFile,Notification,Conversation, ChatMessage,LessonChangeRequest,LessonFeedback, GoogleCalendarToken,LessonMaterial, ParentProfile, ParentStudentLink
+from django.db.models import Q, Max, F
 from django.utils import timezone
 import calendar
 from datetime import date, datetime, timedelta
@@ -36,19 +36,26 @@ def home(request):
         if hasattr(user, "student_profile"):
             return redirect("student_dashboard")
 
+        if hasattr(user, "parent_profile"):
+            return redirect("parent_dashboard")
+
         logout(request)
         return redirect("landing")
 
     return render(request, "landing.html")
 
-
 def landing(request):
-    return render(request, "landing.html")
+    user = request.user
 
+    if user.is_authenticated:
+        if hasattr(user, "teacher_profile"):
+            return redirect("teacher_dashboard")
 
-def landing(request):
-    if request.user.is_authenticated:
-        return redirect("dashboard")
+        if hasattr(user, "student_profile"):
+            return redirect("student_dashboard")
+
+        if hasattr(user, "parent_profile"):
+            return redirect("parent_dashboard")
 
     return render(request, "landing.html")
 
@@ -64,6 +71,224 @@ def dashboard(request):
 
     return render(request, "core/dashboard.html")
 
+@login_required
+def parent_dashboard(request):
+    parent_profile = request.user.parent_profile
+
+    if request.method == "POST":
+        email = request.POST.get("student_email")
+
+        try:
+            student_user = User.objects.get(email=email)
+            student_profile = student_user.student_profile
+
+            ParentStudentLink.objects.get_or_create(
+                parent=parent_profile,
+                student=student_profile,
+                defaults={"status": "pending"}
+            )
+
+            messages.success(request, "Запит надіслано.")
+
+        except User.DoesNotExist:
+            messages.error(request, "Користувача не знайдено.")
+
+        except StudentProfile.DoesNotExist:
+            messages.error(request, "Це не учень.")
+
+        return redirect("parent_dashboard")
+
+    approved_links = ParentStudentLink.objects.filter(
+        parent=parent_profile,
+        status="approved"
+    )
+
+    pending_links = ParentStudentLink.objects.filter(
+        parent=parent_profile,
+        status="pending"
+    )
+
+    return render(
+        request,
+        "core/parent_dashboard.html",
+        {
+            "approved_links": approved_links,
+            "pending_links": pending_links,
+        }
+    )
+
+
+@login_required
+def approve_parent_request(request, link_id):
+    student_profile = request.user.student_profile
+
+    link = get_object_or_404(
+        ParentStudentLink,
+        id=link_id,
+        student=student_profile,
+        status="pending"
+    )
+
+    link.status = "approved"
+    link.save()
+
+    messages.success(request, "Запит від батьків підтверджено.")
+    return redirect("student_dashboard")
+
+
+@login_required
+def reject_parent_request(request, link_id):
+    student_profile = request.user.student_profile
+
+    link = get_object_or_404(
+        ParentStudentLink,
+        id=link_id,
+        student=student_profile,
+        status="pending"
+    )
+
+    link.status = "rejected"
+    link.save()
+
+    messages.success(request, "Запит від батьків відхилено.")
+    return redirect("student_dashboard")
+
+
+@login_required
+def parent_student_detail(request, student_id):
+    parent_profile = request.user.parent_profile
+
+    link = get_object_or_404(
+        ParentStudentLink,
+        parent=parent_profile,
+        student_id=student_id,
+        status="approved"
+    )
+
+    student_profile = link.student
+    student_user = student_profile.user
+
+    teacher_links = StudentTeacherLink.objects.filter(
+        student=student_profile
+    ).select_related("teacher__user")
+
+    total_lessons = CalendarEvent.objects.filter(
+        student=student_user,
+        event_type="lesson",
+        is_cancelled=False
+    ).count()
+
+    total_homeworks = Homework.objects.filter(
+        student=student_user
+    ).count()
+
+    completed_homeworks = Homework.objects.filter(
+        student=student_user,
+        status="checked"
+    ).count()
+
+
+    latest_homeworks = Homework.objects.filter(
+        student=student_user
+    ).order_by("-created_at")[:5]
+
+    late_homeworks = Homework.objects.filter(
+        student=student_user,
+        status="late"
+    ).count()
+
+    lesson_months = (
+        CalendarEvent.objects
+        .filter(
+            student=student_user,
+            event_type="lesson",
+            is_cancelled=False
+        )
+        .annotate(month=TruncMonth("start_time"))
+        .values("month")
+        .annotate(lessons=Count("id"))
+    )
+
+    homework_months = (
+        Homework.objects
+        .filter(student=student_user)
+        .annotate(month=TruncMonth("created_at"))
+        .values("month")
+        .annotate(homeworks=Count("id"))
+    )
+
+    months = {}
+
+    MONTH_NAMES = {
+        1: "Січень", 2: "Лютий", 3: "Березень",
+        4: "Квітень", 5: "Травень", 6: "Червень",
+        7: "Липень", 8: "Серпень", 9: "Вересень",
+        10: "Жовтень", 11: "Листопад", 12: "Грудень",
+    }
+
+    months = {}
+
+    MONTH_NAMES = {
+        1: "Січень", 2: "Лютий", 3: "Березень",
+        4: "Квітень", 5: "Травень", 6: "Червень",
+        7: "Липень", 8: "Серпень", 9: "Вересень",
+        10: "Жовтень", 11: "Листопад", 12: "Грудень",
+    }
+
+    months = {}
+
+    for item in lesson_months:
+        month_date = item["month"]
+        month_key = (month_date.year, month_date.month)
+
+        months[month_key] = {
+            "name": f"{MONTH_NAMES[month_date.month]} {month_date.year}",
+            "lessons": item["lessons"],
+            "homeworks": 0,
+        }
+
+    for item in homework_months:
+        month_date = item["month"]
+        month_key = (month_date.year, month_date.month)
+
+        if month_key not in months:
+            months[month_key] = {
+                "name": f"{MONTH_NAMES[month_date.month]} {month_date.year}",
+                "lessons": 0,
+                "homeworks": item["homeworks"],
+            }
+        else:
+            months[month_key]["homeworks"] = item["homeworks"]
+
+    max_activity = max(
+        [m["lessons"] + m["homeworks"] for m in months.values()],
+        default=1
+    )
+
+    monthly_stats = []
+
+    for month_key, data in sorted(months.items()):
+        total_activity = data["lessons"] + data["homeworks"]
+
+        monthly_stats.append({
+            "name": data["name"],
+            "lessons": data["lessons"],
+            "homeworks": data["homeworks"],
+            "percent": int((total_activity / max_activity) * 100),
+        })
+
+
+    return render(request, "core/parent_student_detail.html", {
+        "student_profile": student_profile,
+        "student_user": student_user,
+        "teacher_links": teacher_links,
+        "total_lessons": total_lessons,
+        "total_homeworks": total_homeworks,
+        "completed_homeworks": completed_homeworks,
+        "latest_homeworks": latest_homeworks,
+        'late_homeworks': late_homeworks,
+        "monthly_stats": monthly_stats,
+    })
 
 @login_required
 def teachers(request):
@@ -219,9 +444,14 @@ def student_dashboard_view(request):
         student=student_profile
     ).select_related("teacher__user")
 
+    parent_requests = ParentStudentLink.objects.filter(
+        student=student_profile,
+        status="approved"
+    ).select_related("parent__user")
+
     homework_tasks = Homework.objects.filter(
         student=request.user,
-        submission__isnull=True  # ← головне
+        submission__isnull=True
     ).order_by("-created_at")[:3]
 
     next_lesson = CalendarEvent.objects.filter(
@@ -265,6 +495,7 @@ def student_dashboard_view(request):
         "today_lessons_count": today_lessons.count(),
         "completed_tasks_count": completed_tasks_count,
         "total_tasks_count": total_tasks_count,
+        "parent_requests": parent_requests,
     }
 
     return render(request, "core/student_dashboard.html", context)
@@ -1296,18 +1527,35 @@ def student_public_profile(request, student_id):
         student=student.user
     ).order_by("-created_at")[:4]
 
+    connected_parents = ParentStudentLink.objects.filter(
+        student=student,
+        status="approved"
+    ).select_related("parent__user")
+
     context = {
         "profile_type": "student",
         "student": student,
         "teacher": teacher_profile,
         "upcoming_lessons": upcoming_lessons,
         "homeworks": homeworks,
+        "connected_parents": connected_parents,
     }
 
     return render(request, "core/profile_detail.html", context)
 
 
+@login_required
+def start_chat_with_parent(request, parent_id, student_id):
+    parent = get_object_or_404(ParentProfile, id=parent_id)
+    student = get_object_or_404(StudentProfile, id=student_id)
 
+    conversation, created = Conversation.objects.get_or_create(
+        teacher=request.user,
+        student=student.user,
+        parent=parent.user
+    )
+
+    return redirect("chat_detail", conversation.id)
 
 
 @login_required
@@ -1844,11 +2092,9 @@ def unread_notifications_api(request):
         "notifications": data
     })
 
-
 @login_required
 def chat_view(request, conversation_id=None):
     user = request.user
-
 
     if hasattr(user, "teacher_profile"):
         student_links = StudentTeacherLink.objects.filter(
@@ -1858,10 +2104,47 @@ def chat_view(request, conversation_id=None):
         for link in student_links:
             Conversation.objects.get_or_create(
                 teacher=user,
-                student=link.student.user
+                student=link.student.user,
+                parent=None
+            )
+
+        teacher_students = StudentTeacherLink.objects.filter(
+            teacher=user.teacher_profile
+        ).values_list("student_id", flat=True)
+
+        parent_links = ParentStudentLink.objects.filter(
+            student_id__in=teacher_students,
+            status="approved"
+        ).select_related("parent__user", "student__user").distinct()
+
+        for link in parent_links:
+            Conversation.objects.get_or_create(
+                teacher=user,
+                student=link.student.user,
+                parent=link.parent.user
             )
 
         conversations = Conversation.objects.filter(teacher=user)
+
+    elif hasattr(user, "parent_profile"):
+        parent_links = ParentStudentLink.objects.filter(
+            parent=user.parent_profile,
+            status="approved"
+        ).select_related("student__user")
+
+        for parent_link in parent_links:
+            teacher_links = StudentTeacherLink.objects.filter(
+                student=parent_link.student
+            ).select_related("teacher__user")
+
+            for teacher_link in teacher_links:
+                Conversation.objects.get_or_create(
+                    teacher=teacher_link.teacher.user,
+                    student=parent_link.student.user,
+                    parent=user
+                )
+
+        conversations = Conversation.objects.filter(parent=user)
 
     else:
         links = StudentTeacherLink.objects.filter(
@@ -1871,24 +2154,23 @@ def chat_view(request, conversation_id=None):
         for link in links:
             Conversation.objects.get_or_create(
                 teacher=link.teacher.user,
-                student=user
+                student=user,
+                parent=None
             )
 
-        conversations = Conversation.objects.filter(student=user)
+        conversations = Conversation.objects.filter(student=user, parent=None)
 
     conversations = conversations.order_by("-updated_at")
 
     active_conversation = None
 
     if conversation_id:
-        active_conversation = get_object_or_404(
-            conversations,
-            id=conversation_id
-        )
+        active_conversation = get_object_or_404(conversations, id=conversation_id)
     elif conversations.exists():
         active_conversation = conversations.first()
 
     messages = []
+
     if active_conversation:
         Notification.objects.filter(
             user=request.user,
@@ -1896,7 +2178,6 @@ def chat_view(request, conversation_id=None):
             is_read=False
         ).update(is_read=True)
 
-    if active_conversation:
         messages = active_conversation.messages.select_related(
             "sender",
             "change_request",
@@ -1913,7 +2194,6 @@ def chat_view(request, conversation_id=None):
 
     return render(request, "core/chat.html", context)
 
-
 @login_required
 def send_chat_message(request, conversation_id):
     if request.method != "POST":
@@ -1921,7 +2201,9 @@ def send_chat_message(request, conversation_id):
 
     conversation = get_object_or_404(
         Conversation.objects.filter(
-            Q(teacher=request.user) | Q(student=request.user)
+            Q(teacher=request.user) |
+            Q(student=request.user, parent=None) |
+            Q(parent=request.user)
         ),
         id=conversation_id
     )
@@ -1938,14 +2220,14 @@ def send_chat_message(request, conversation_id):
         text=text,
         file=file
     )
+
     conversation.updated_at = message.created_at
     conversation.save(update_fields=["updated_at"])
 
-    receiver = (
-        conversation.student
-        if request.user == conversation.teacher
-        else conversation.teacher
-    )
+    if conversation.parent:
+        receiver = conversation.parent if request.user == conversation.teacher else conversation.teacher
+    else:
+        receiver = conversation.student if request.user == conversation.teacher else conversation.teacher
 
     Notification.objects.create(
         user=receiver,
@@ -1963,6 +2245,7 @@ def send_chat_message(request, conversation_id):
         "file_url": message.file.url if message.file else "",
         "file_name": message.file.name.split("/")[-1] if message.file else "",
     })
+
 @login_required
 def unread_notifications(request):
     notifications_count = request.user.notifications.filter(
@@ -1990,10 +2273,19 @@ def get_lesson_receiver(lesson, user):
 
 
 def get_or_create_lesson_conversation(lesson):
-    conversation, created = Conversation.objects.get_or_create(
+    conversation = Conversation.objects.filter(
         teacher=lesson.teacher,
-        student=lesson.student
-    )
+        student=lesson.student,
+        parent__isnull=True
+    ).first()
+
+    if not conversation:
+        conversation = Conversation.objects.create(
+            teacher=lesson.teacher,
+            student=lesson.student,
+            parent=None
+        )
+
     return conversation
 
 @login_required

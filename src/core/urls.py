@@ -54,6 +54,11 @@ urlpatterns = [
     path("chat/teacher/<int:teacher_id>/", views.start_chat_with_teacher, name="start_chat_with_teacher"),
     path("lesson/<int:lesson_id>/feedback/", views.submit_lesson_feedback, name="submit_lesson_feedback"),
     path("student/achievements/", views.student_achievements, name="student_achievements"),
+    path("parent/", views.parent_dashboard, name="parent_dashboard"),
+    path("parent-request/<int:link_id>/approve/", views.approve_parent_request, name="approve_parent_request"),
+    path("parent-request/<int:link_id>/reject/", views.reject_parent_request, name="reject_parent_request"),
+    path("parent/student/<int:student_id>/", views.parent_student_detail, name="parent_student_detail"),
+    path("chat/parent/<int:parent_id>/student/<int:student_id>/", views.start_chat_with_parent, name="start_chat_with_parent"),
 ]
 
 

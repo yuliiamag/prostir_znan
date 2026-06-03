@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+{% block title %}Кабінет батьків • Простір знань{% endblock %}
+
+{% block content %}
+<main class="parent-main">
+
+  <div class="topbar">
+    <div class="greeting">
+      <h1>Кабінет батьків</h1>
+      <p>Тут можна підключити дитину та переглядати її навчальну активність</p>
+    </div>
+  </div>
+
+  <section class="parent-grid">
+    <div class="card add-student-card">
+      <div class="section-head">
+        <h3>Додати дитину</h3>
+      </div>
+
+      <form method="post" class="join-form">
+        {% csrf_token %}
+        <p>Введіть email дитини. Після цього дитина має підтвердити запит у своєму кабінеті.</p>
+
+        <input
+          type="email"
+          name="student_email"
+          placeholder="Email учня"
+          required
+        >
+
+        <div class="btn-row">
+          <button type="submit" class="small-btn">Надіслати запит</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="section-head">
+        <h3>Очікують підтвердження</h3>
+      </div>
+
+      {% for link in pending_links %}
+        <div class="parent-item">
+          <div class="avatar_p">
+            {{ link.student.user.first_name|slice:":1"|default:"?" }}
+          </div>
+
+          <div>
+            <div class="item-title">
+              {{ link.student.user.first_name }} {{ link.student.user.last_name }}
+            </div>
+            <div class="item-subtitle">{{ link.student.user.email }}</div>
+          </div>
+
+          <span class="pill pill-planned">Очікує</span>
+        </div>
+      {% empty %}
+        <p class="empty-text">Немає активних запитів</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <h3>Підключені діти</h3>
+    </div>
+
+    {% for link in approved_links %}
+      <a href="{% url 'parent_student_detail' link.student.id %}" class="child-card child-link">
+        <div class="child-info">
+          <div class="avatar big">
+            {{ link.student.user.first_name|slice:":1"|default:"?" }}
+          </div>
+
+          <div>
+            <h3>{{ link.student.user.first_name }} {{ link.student.user.last_name }}</h3>
+            <p>{{ link.student.user.email }}</p>
+          </div>
+        </div>
+
+        <span class="pill pill-done">Підтверджено</span>
+      </a>
+    {% empty %}
+      <div class="empty-block">
+        <div class="empty-icon">👨‍👩‍👧</div>
+        <h3>Дітей поки немає</h3>
+        <p>Після підтвердження запиту профіль дитини з’явиться тут</p>
+      </div>
+    {% endfor %}
+  </section>
+
+</main>
+
+<style>
+.parent-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.greeting h1 {
+  margin: 0 0 6px;
+  font-size: 38px;
+  line-height: 1.1;
+  color: #1d5f4f;
+}
+
+.greeting p {
+  margin: 0;
+  font-size: 16px;
+  color: #51756a;
+}
+
+.parent-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #b7d38d;
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.section-head h3 {
+  margin: 0;
+  font-size: 17px;
+  color: #205244;
+}
+
+.join-form p {
+  margin: 0 0 10px;
+  color: #587365;
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+.join-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cfe0d4;
+  border-radius: 10px;
+  font-size: 14px;
+  box-sizing: border-box;
+  outline: none;
+  background: #f9fcfa;
+}
+
+.btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.small-btn {
+  border: 1px solid #b7d38d;
+  background: #fff;
+  color: #205244;
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.parent-item,
+.child-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #edf2ea;
+}
+
+.parent-item,
+.child-card {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  width: 100%;
+  padding: 12px 0;
+  border-top: 1px solid #edf2ea;
+}
+
+.avatar_p {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: #0c5f4f;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+.child-link {
+  display: flex;
+  width: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
+.child-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(32,70,55,.08);
+}
+
+.avatar.big {
+  width: 54px;
+  height: 54px;
+  font-size: 20px;
+}
+
+.child-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.child-info h3 {
+  margin: 0;
+  color: #205244;
+  font-size: 17px;
+}
+
+.child-info p {
+  margin: 3px 0 0;
+  color: #638174;
+  font-size: 13px;
+}
+
+.item-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #205244;
+}
+
+.item-subtitle {
+  font-size: 12px;
+  color: #638174;
+  margin-top: 2px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pill-done {
+  background: #eef7e7;
+  color: #6a9c2f;
+}
+
+.pill-planned {
+  background: #f6eadb;
+  color: #9c6a28;
+}
+
+.empty-text {
+  color: #638174;
+  margin: 0;
+}
+
+.empty-block {
+  text-align: center;
+  padding: 38px 20px;
+}
+
+.empty-icon {
+  font-size: 38px;
+  margin-bottom: 10px;
+}
+
+.empty-block h3 {
+  margin: 0 0 6px;
+  color: #205244;
+}
+
+.empty-block p {
+  margin: 0 auto;
+  max-width: 380px;
+  color: #638174;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .parent-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .greeting h1 {
+    font-size: 30px;
+  }
+}
+</style>
+{% endblock %}
