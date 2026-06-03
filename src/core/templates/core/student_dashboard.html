@@ -286,6 +286,17 @@
   transform: translateY(-3px);
   box-shadow: 0 12px 24px rgba(32,70,55,.08);
 }
+.connection-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 900px) {
+    .connection-grid {
+        grid-template-columns: 1fr;
+    }
+}
   .errorlist {
     margin: 10px 0 0;
     padding: 10px 14px;
@@ -392,6 +403,7 @@
     </div>
   </section>
 
+<div class="connection-grid">
   <section class="card join-card">
     <div class="section-head">
       <h3>Додати вчителя</h3>
@@ -425,6 +437,33 @@
       </div>
     </form>
   </section>
+  <section class="card">
+    <div class="section-head">
+        <h3>Підключені батьки</h3>
+    </div>
+
+    {% for request in parent_requests %}
+        <div class="task-item">
+            <div>
+                <div class="item-title">
+                    {{ request.parent.user.first_name }}
+                </div>
+
+                <div class="item-subtitle">
+                    {{ request.parent.user.email }}
+                </div>
+            </div>
+
+            <span class="pill pill-done">
+                Підключено
+            </span>
+        </div>
+    {% empty %}
+        <p class="empty-text">Батьки ще не підключені</p>
+    {% endfor %}
+</section>
+
+</div>
 
   <section class="content-grid">
     <div class="card">

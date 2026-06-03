@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
-
+from .models import ParentProfile
 from .models import (
     TeacherProfile,
     StudentProfile,
@@ -15,6 +15,7 @@ class CustomSignupForm(forms.Form):
     ROLE_CHOICES = (
         ("student", "Я учень"),
         ("teacher", "Я вчитель"),
+        ("parent", "Батьки"),
     )
 
     first_name = forms.CharField(
@@ -39,8 +40,12 @@ class CustomSignupForm(forms.Form):
                 user=user,
                 access_code=generate_unique_access_code(),
             )
-        else:
+
+        elif role == "student":
             StudentProfile.objects.create(user=user)
+
+        elif role == "parent":
+            ParentProfile.objects.create(user=user)
 
 
 class JoinTeacherByCodeForm(forms.Form):

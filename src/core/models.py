@@ -45,6 +45,12 @@ class StudentProfile(models.Model):
     def __str__(self):
         return f"Student: {self.user.email}"
 
+class ParentProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='parent_profile')
+
+    def __str__(self):
+        return f"Батьки: {self.user.email}"
+
 
 class StudentTeacherLink(models.Model):
     student = models.ForeignKey(
@@ -65,6 +71,38 @@ class StudentTeacherLink(models.Model):
     def __str__(self):
         return f"{self.student.user.email} -> {self.teacher.user.email}"
 
+class ParentStudentLink(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Очікує підтвердження"),
+        ("approved", "Підтверджено"),
+        ("rejected", "Відхилено"),
+    ]
+
+    parent = models.ForeignKey(
+        ParentProfile,
+        on_delete=models.CASCADE,
+        related_name="student_links"
+    )
+
+    student = models.ForeignKey(
+        StudentProfile,
+        on_delete=models.CASCADE,
+        related_name="parent_links"
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="pending"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("parent", "student")
+
+    def __str__(self):
+        return f"{self.parent.user.email} -> {self.student.user.email}"
 
 class CalendarEvent(models.Model):
     EVENT_TYPES = [
@@ -264,17 +302,26 @@ class Conversation(models.Model):
         on_delete=models.CASCADE,
         related_name="teacher_conversations"
     )
+
     student = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name="student_conversations"
     )
+
+    parent = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="parent_conversations",
+        null=True,
+        blank=True
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        unique_together = ("teacher", "student")
-
+        unique_together = ("teacher", "student", "parent")
 
 class ChatMessage(models.Model):
 

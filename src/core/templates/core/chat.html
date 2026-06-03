@@ -324,73 +324,85 @@
 
     <div class="conv-list">
 
-      {% for conv in conversations %}
+  {% for conv in conversations %}
 
-        {% if request.user == conv.teacher %}
-          {% with conv.student as chat_user %}
+    {% if request.user == conv.teacher %}
 
-            <a href="{% url 'chat_detail' conv.id %}"
-               class="conv-item {% if active_conversation.id == conv.id %}active{% endif %}">
+      {% if conv.parent %}
+        <a href="{% url 'chat_detail' conv.id %}"
+           class="conv-item {% if active_conversation.id == conv.id %}active{% endif %}">
 
-              <div class="ci-av">
-                {{ chat_user.first_name|slice:":1" }}{{ chat_user.last_name|slice:":1" }}
-              </div>
+          <div class="ci-av">
+            {{ conv.parent.first_name|slice:":1" }}{{ conv.parent.last_name|slice:":1" }}
+          </div>
 
-              <div class="ci-body">
-                <div class="ci-name">
-                  {{ chat_user.first_name }} {{ chat_user.last_name }}
-                </div>
+          <div class="ci-body">
+            <div class="ci-name">
+              {{ conv.parent.first_name }} {{ conv.parent.last_name }}
+            </div>
 
-                {% with conv.messages.last as last %}
-                  {% if last %}
-                    <div class="ci-preview">{{ last.text|truncatechars:35 }}</div>
-                  {% else %}
-                    <div class="ci-preview">Немає повідомлень</div>
-                  {% endif %}
-                {% endwith %}
-              </div>
+            <div class="ci-preview">
+              Батьки учня {{ conv.student.first_name }}
+            </div>
+          </div>
+        </a>
 
-            </a>
+      {% else %}
+        <a href="{% url 'chat_detail' conv.id %}"
+           class="conv-item {% if active_conversation.id == conv.id %}active{% endif %}">
 
+          <div class="ci-av">
+            {{ conv.student.first_name|slice:":1" }}{{ conv.student.last_name|slice:":1" }}
+          </div>
+
+          <div class="ci-body">
+            <div class="ci-name">
+              {{ conv.student.first_name }} {{ conv.student.last_name }}
+            </div>
+
+            {% with conv.messages.last as last %}
+              {% if last %}
+                <div class="ci-preview">{{ last.text|truncatechars:35 }}</div>
+              {% else %}
+                <div class="ci-preview">Немає повідомлень</div>
+              {% endif %}
+            {% endwith %}
+          </div>
+        </a>
+      {% endif %}
+
+    {% else %}
+
+      <a href="{% url 'chat_detail' conv.id %}"
+         class="conv-item {% if active_conversation.id == conv.id %}active{% endif %}">
+
+        <div class="ci-av">
+          {{ conv.teacher.first_name|slice:":1" }}{{ conv.teacher.last_name|slice:":1" }}
+        </div>
+
+        <div class="ci-body">
+          <div class="ci-name">
+            {{ conv.teacher.first_name }} {{ conv.teacher.last_name }}
+          </div>
+
+          {% with conv.messages.last as last %}
+            {% if last %}
+              <div class="ci-preview">{{ last.text|truncatechars:35 }}</div>
+            {% else %}
+              <div class="ci-preview">Немає повідомлень</div>
+            {% endif %}
           {% endwith %}
+        </div>
+      </a>
 
-        {% else %}
-          {% with conv.teacher as chat_user %}
+    {% endif %}
 
-            <a href="{% url 'chat_detail' conv.id %}"
-               class="conv-item {% if active_conversation.id == conv.id %}active{% endif %}">
+  {% empty %}
+    <div class="chat-empty">Поки немає розмов</div>
+  {% endfor %}
 
-              <div class="ci-av">
-                {{ chat_user.first_name|slice:":1" }}{{ chat_user.last_name|slice:":1" }}
-              </div>
-
-              <div class="ci-body">
-                <div class="ci-name">
-                  {{ chat_user.first_name }} {{ chat_user.last_name }}
-                </div>
-
-                {% with conv.messages.last as last %}
-                  {% if last %}
-                    <div class="ci-preview">{{ last.text|truncatechars:35 }}</div>
-                  {% else %}
-                    <div class="ci-preview">Немає повідомлень</div>
-                  {% endif %}
-                {% endwith %}
-              </div>
-
-            </a>
-
-          {% endwith %}
-        {% endif %}
-
-      {% empty %}
-        <div class="chat-empty">Поки немає розмов</div>
-      {% endfor %}
-
-    </div>
-
-  </div>
-
+</div>
+</div>
   <!-- CHAT -->
   <div class="chat-area">
 
@@ -400,37 +412,66 @@
       <div class="chat-header">
 
         {% if request.user == active_conversation.teacher %}
-          {% with active_conversation.student as chat_user %}
 
-            <div class="ch-av">
-              {{ chat_user.first_name|slice:":1" }}{{ chat_user.last_name|slice:":1" }}
-            </div>
+  {% if active_conversation.parent %}
+    {% with active_conversation.parent as chat_user %}
 
-            <div class="ch-info">
-              <div class="ch-name">
-                {{ chat_user.first_name }} {{ chat_user.last_name }}
-              </div>
-              <div class="ch-status">Повідомлення</div>
-            </div>
+      <div class="ch-av">
+        {{ chat_user.first_name|slice:":1" }}{{ chat_user.last_name|slice:":1" }}
+      </div>
 
-          {% endwith %}
+      <div class="ch-info">
+        <div class="ch-name">
+          {{ chat_user.first_name }} {{ chat_user.last_name }}
+        </div>
 
-        {% else %}
-          {% with active_conversation.teacher as chat_user %}
+        <div class="ch-status">
+          Батьки учня {{ active_conversation.student.first_name }}
+        </div>
+      </div>
 
-            <div class="ch-av">
-              {{ chat_user.first_name|slice:":1" }}{{ chat_user.last_name|slice:":1" }}
-            </div>
+    {% endwith %}
 
-            <div class="ch-info">
-              <div class="ch-name">
-                {{ chat_user.first_name }} {{ chat_user.last_name }}
-              </div>
-              <div class="ch-status">Повідомлення</div>
-            </div>
+  {% else %}
+    {% with active_conversation.student as chat_user %}
 
-          {% endwith %}
-        {% endif %}
+      <div class="ch-av">
+        {{ chat_user.first_name|slice:":1" }}{{ chat_user.last_name|slice:":1" }}
+      </div>
+
+      <div class="ch-info">
+        <div class="ch-name">
+          {{ chat_user.first_name }} {{ chat_user.last_name }}
+        </div>
+
+        <div class="ch-status">Учень</div>
+      </div>
+
+    {% endwith %}
+  {% endif %}
+
+{% else %}
+
+  {% with active_conversation.teacher as chat_user %}
+
+    <div class="ch-av">
+      {{ chat_user.first_name|slice:":1" }}{{ chat_user.last_name|slice:":1" }}
+    </div>
+
+    <div class="ch-info">
+      <div class="ch-name">
+        {{ chat_user.first_name }} {{ chat_user.last_name }}
+      </div>
+
+      <div class="ch-status">
+        Вчитель
+      </div>
+    </div>
+
+  {% endwith %}
+
+{% endif %}
+
 
       </div>
 

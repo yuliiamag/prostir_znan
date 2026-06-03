@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Куточок знань{% endblock %}</title>
+  <title>{% block title %}Простір знань{% endblock %}</title>
 
   <style>
     :root{
@@ -352,23 +352,28 @@
 
     {% if user.teacher_profile %}
       <a href="{% url 'teacher_dashboard' %}" class="brand">
-        Куточок знань
+        Простір знань
       </a>
 
     {% elif user.student_profile %}
       <a href="{% url 'student_dashboard' %}" class="brand">
-        Куточок знань
+        Простір знань
       </a>
+
+     {% elif user.parent_profile %}
+  <a href="{% url 'parent_dashboard' %}" class="brand">
+      Простір знань
+  </a>
 
     {% else %}
       <a href="{% url 'landing' %}" class="brand">
-        Куточок знань
+        Простір знань
       </a>
     {% endif %}
 
   {% else %}
     <a href="{% url 'landing' %}" class="brand">
-      Куточок знань
+      Простір знань
     </a>
   {% endif %}
 </div>
@@ -381,11 +386,23 @@
         </div>
 
         <nav class="menu">
-<!--  <a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">-->
-<!--    <span class="menu-icon"></span>-->
-<!--    <span>Головна</span>-->
-<!--  </a>-->
-            {% if user.is_authenticated %}
+
+{% if user.is_authenticated and user.parent_profile %}
+
+  <a href="{% url 'parent_dashboard' %}">
+    <span class="menu-icon"></span>
+    <span>Моя сторінка</span>
+  </a>
+
+  <a href="{% url 'chat' %}" class="{% if request.path == '/messages/' %}active{% endif %}">
+  <span class="menu-icon"></span>
+  <span>Повідомлення</span>
+  <span id="messages-count" class="notif-badge"></span>
+</a>
+
+{% else %}
+
+  {% if user.is_authenticated %}
     {% if user.teacher_profile %}
       <a href="{% url 'teacher_dashboard' %}">
         <span class="menu-icon"></span>
@@ -400,59 +417,48 @@
   {% endif %}
 
   <a href="{% url 'lessons' %}" class="{% if request.path == '/lessons/' %}active{% endif %}">
-  <span class="menu-icon"></span>
-  <span>Мої заняття</span>
-</a>
+    <span class="menu-icon"></span>
+    <span>Мої заняття</span>
+  </a>
 
   <a href="{% url 'calendar' %}" class="{% if request.path == '/calendar/' %}active{% endif %}">
     <span class="menu-icon"></span>
     <span>Календар</span>
   </a>
-         <a href="{% url 'notifications' %}" class="{% if request.path == '/notifications/' %}active{% endif %}">
-          <span class="menu-icon"></span>
-          <span>Сповіщення</span>
-          <span id="notifications-count" class="notif-badge"></span>
-        </a>
 
-          <a href="{% url 'chat' %}" class="{% if request.path == '/messages/' %}active{% endif %}">
-            <span class="menu-icon"></span>
-            <span>Повідомлення</span>
-            <span id="messages-count" class="notif-badge"></span>
-          </a>
+  <a href="{% url 'notifications' %}" class="{% if request.path == '/notifications/' %}active{% endif %}">
+    <span class="menu-icon"></span>
+    <span>Сповіщення</span>
+    <span id="notifications-count" class="notif-badge"></span>
+  </a>
 
+  <a href="{% url 'chat' %}" class="{% if request.path == '/messages/' %}active{% endif %}">
+    <span class="menu-icon"></span>
+    <span>Повідомлення</span>
+    <span id="messages-count" class="notif-badge"></span>
+  </a>
 
+  <a href="{% url 'homework' %}">
+    <span class="menu-icon"></span>
+    <span>Домашні завдання</span>
+  </a>
 
-         <a href="{% url 'homework' %}">
-          <span class="menu-icon"></span>
-          <span>Домашні завдання</span>
-        </a>
+  {% if request.user.teacher_profile %}
+    <a href="{% url 'teacher_statistics' %}">
+      <span class="menu-icon"></span>
+      <span>Статистика</span>
+    </a>
+  {% endif %}
 
-          {% if request.user.teacher_profile %}
-            <a href="{% url 'teacher_statistics' %}">
-              <span class="menu-icon"></span>
-              <span>Статистика</span>
-            </a>
-          {% endif %}
-          {% if request.user.student_profile %}
-            <a href="{% url 'student_statistics' %}">
-              <span class="menu-icon"></span>
-              <span>Статистика</span>
-            </a>
-          {% endif %}
+  {% if request.user.student_profile %}
+    <a href="{% url 'student_statistics' %}">
+      <span class="menu-icon"></span>
+      <span>Статистика</span>
+    </a>
+  {% endif %}
 
-<!--  {% if user.is_authenticated %}-->
-<!--    {% if user.teacher_profile %}-->
-<!--      <a href="{% url 'teacher_dashboard' %}">-->
-<!--        <span class="menu-icon"></span>-->
-<!--        <span>Моя сторінка</span>-->
-<!--      </a>-->
-<!--    {% elif user.student_profile %}-->
-<!--      <a href="{% url 'student_dashboard' %}">-->
-<!--        <span class="menu-icon"></span>-->
-<!--        <span>Моя сторінка</span>-->
-<!--      </a>-->
-<!--    {% endif %}-->
-<!--  {% endif %}-->
+{% endif %}
+
 </nav>
 
 
