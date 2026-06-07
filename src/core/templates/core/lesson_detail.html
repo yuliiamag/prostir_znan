@@ -794,15 +794,7 @@
             {% endif %}
           </p>
         </section>
-
-        {% if lesson.meeting_link %}
-        <section class="lesson-card">
-          <div class="card-title">Посилання на урок</div>
-          <a href="{{ lesson.meeting_link }}" target="_blank" class="action-btn primary">
-            ▶ Перейти до онлайн-уроку
-          </a>
-        </section>
-        {% endif %}
+        
         {% if lesson.materials.all %}
           <section class="lesson-card">
             <div class="card-title">Матеріали до уроку</div>
