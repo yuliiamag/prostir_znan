@@ -160,3 +160,4 @@ ACCOUNT_SIGNUP_FORM_CLASS = "core.forms.CustomSignupForm"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+

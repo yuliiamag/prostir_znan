@@ -23,6 +23,9 @@ from django.core.mail import send_mail
 from .google_calendar import update_lesson_in_google_calendar, delete_lesson_from_google_calendar
 from core.achievements import build_achievements
 from django.contrib.auth import logout
+import uuid
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
@@ -917,8 +920,10 @@ def create_lesson(request, lesson_id=None):
                             lesson=lesson,
                             file=file
                         )
-                    if request.session.get("google_credentials"):
+                    if GoogleCalendarToken.objects.filter(user=request.user).exists():
                         sync_lesson_to_google_calendar_for_participants(lesson)
+                    else:
+                        print("Google Calendar token not found for user:", request.user)
 
                    # if form_data["notify_student"] == "on":
                         Notification.objects.create(
@@ -969,9 +974,10 @@ def create_lesson(request, lesson_id=None):
                                     teacher=request.user,
                                     student=selected_student.user,
                                 )
-
-                                if request.session.get("google_credentials"):
-                                    sync_lesson_to_google_calendar(request, repeat_lesson)
+                                if GoogleCalendarToken.objects.filter(user=request.user).exists():
+                                    sync_lesson_to_google_calendar_for_participants(repeat_lesson)
+                                else:
+                                    print("Google Calendar token not found for repeat lesson:", request.user)
 
                     return redirect("lesson_detail", lesson_id=lesson.id)
 
@@ -1630,7 +1636,16 @@ def google_calendar_callback(request):
             "Google Calendar підключено, але старі уроки не всі синхронізувалися."
         )
 
-    return redirect("dashboard")
+    if hasattr(request.user, "teacher_profile"):
+        return redirect("teacher_dashboard")
+
+    if hasattr(request.user, "student_profile"):
+        return redirect("student_dashboard")
+
+    if hasattr(request.user, "parent_profile"):
+        return redirect("parent_dashboard")
+
+    return redirect("landing")
 
 
 def sync_lesson_to_google_calendar_for_user(user, lesson):
@@ -1641,7 +1656,6 @@ def sync_lesson_to_google_calendar_for_user(user, lesson):
         return None
 
     credentials = Credentials(**google_token.get_credentials_dict())
-
     service = build("calendar", "v3", credentials=credentials)
 
     event_body = {
@@ -1655,14 +1669,39 @@ def sync_lesson_to_google_calendar_for_user(user, lesson):
             "dateTime": lesson.end_time.isoformat(),
             "timeZone": "Europe/Kyiv",
         },
+        "attendees": [
+            {"email": lesson.student.email}
+        ],
+        "conferenceData": {
+            "createRequest": {
+                "requestId": str(uuid.uuid4()),
+                "conferenceSolutionKey": {
+                    "type": "hangoutsMeet"
+                }
+            }
+        },
     }
 
     created_event = service.events().insert(
         calendarId="primary",
         body=event_body,
+        conferenceDataVersion=1,
+        sendUpdates="all",
     ).execute()
 
+    lesson.meeting_link = created_event.get("hangoutLink")
+    lesson.google_event_id = created_event.get("id")
+    lesson.is_synced_with_google = True
+    lesson.save(update_fields=[
+        "meeting_link",
+        "google_event_id",
+        "is_synced_with_google",
+    ])
+
     return created_event
+
+def sync_lesson_to_google_calendar_for_participants(lesson):
+    return sync_lesson_to_google_calendar_for_user(lesson.teacher, lesson)
 
 def sync_user_lessons_after_google_connect(request):
     if hasattr(request.user, "teacher_profile"):
